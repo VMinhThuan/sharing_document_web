@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import DocumentCard from '../components/DocumentCard';
-import TopicCard from '../components/TopicCard';
+import DocumentCard from '../../components/DocumentCard/DocumentCard';
+import TopicCard from '../../components/TopicCard/TopicCard';
 
 const TopicDetail = () => {
   const { id } = useParams();
@@ -129,7 +129,7 @@ const TopicDetail = () => {
       <div className="max-w-7xl mx-auto">
         {/* Back Button */}
         <button
-          onClick={() => navigate('/topics')}
+          onClick={() => navigate('/admin/topics')}
           className="text-blue-600 hover:text-blue-700 mb-3 md:mb-4 text-xs md:text-sm font-medium"
         >
           ← Back to Topics
@@ -163,7 +163,7 @@ const TopicDetail = () => {
             {/* Upload Document Button */}
             <div>
               <Link
-                to={`/upload?topic=${id}`}
+                to={`/admin/upload?topic=${id}`}
                 className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
               >
                 <span>📤</span>

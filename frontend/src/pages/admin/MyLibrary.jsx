@@ -154,7 +154,7 @@ const MyLibrary = () => {
             {myTopics.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                 {myTopics.map((topic) => (
-                  <Link key={topic.id} to={`/topics/${topic.id}`}>
+                  <Link key={topic.id} to={`/admin/topics/${topic.id}`}>
                     <div className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer h-full">
                       <div className="flex items-start justify-between mb-3">
                         <h3 className="text-lg font-semibold text-gray-900 flex-1">{topic.title}</h3>
@@ -180,7 +180,7 @@ const MyLibrary = () => {
               <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
                 <p className="text-gray-500 text-lg mb-4">You haven't created any topics yet.</p>
                 <Link
-                  to="/topics/create"
+                  to="/admin/topics/create"
                   className="inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
                 >
                   Create Your First Topic
@@ -196,7 +196,7 @@ const MyLibrary = () => {
             {myDocuments.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                 {myDocuments.map((doc) => (
-                  <Link key={doc.id} to={`/documents/${doc.id}`}>
+                  <Link key={doc.id} to={`/admin/documents/${doc.id}`}>
                     <div className="bg-white rounded-lg border border-gray-200 p-5 hover:shadow-md transition-shadow cursor-pointer h-full">
                       <div className="flex items-start gap-4 mb-3">
                         <div className="text-4xl">{getFileIcon(doc.type)}</div>
@@ -233,7 +233,7 @@ const MyLibrary = () => {
               <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
                 <p className="text-gray-500 text-lg mb-4">You haven't uploaded any documents yet.</p>
                 <Link
-                  to="/upload"
+                  to="/admin/upload"
                   className="inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
                 >
                   Upload Your First Document

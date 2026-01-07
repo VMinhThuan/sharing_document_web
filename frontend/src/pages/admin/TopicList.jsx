@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import TopicCard from '../components/TopicCard';
+import TopicCard from '../../components/TopicCard/TopicCard';
 
 const TopicList = () => {
   const [subjectFilter, setSubjectFilter] = useState('all');
@@ -79,7 +79,7 @@ const TopicList = () => {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4 md:mb-6">
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Learning Topics</h1>
           <Link
-            to="/topics/create"
+            to="/admin/topics/create"
             className="px-3 md:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm md:text-base font-medium whitespace-nowrap"
           >
             + Create Topic

@@ -5,10 +5,10 @@ const Sidebar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const navItems = [
-    { path: '/', label: 'Dashboard', icon: '📊' },
-    { path: '/topics', label: 'Topics', icon: '📚' },
-    { path: '/documents', label: 'Documents', icon: '📄' },
-    { path: '/friends', label: 'Friends', icon: '👥' },
+    { path: '/admin', label: 'Dashboard', icon: '📊' },
+    { path: '/admin/topics', label: 'Topics', icon: '📚' },
+    { path: '/admin/documents', label: 'Documents', icon: '📄' },
+    { path: '/admin/friends', label: 'Friends', icon: '👥' },
   ];
 
   return (
@@ -55,7 +55,7 @@ const Sidebar = () => {
               <li key={item.path}>
                 <NavLink
                   to={item.path}
-                  end={item.path === '/'}
+                  end={item.path === '/admin'}
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={({ isActive }) =>
                     `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${

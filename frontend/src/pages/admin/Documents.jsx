@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import DocumentCard from '../components/DocumentCard';
+import DocumentCard from '../../components/DocumentCard/DocumentCard';
 
 const Documents = () => {
   const [filter, setFilter] = useState('all');
@@ -55,7 +55,7 @@ const Documents = () => {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4 md:mb-6">
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Documents</h1>
           <Link
-            to="/upload"
+            to="/admin/upload"
             className="px-3 md:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm md:text-base font-medium whitespace-nowrap"
           >
             + Upload Document

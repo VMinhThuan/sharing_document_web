@@ -17,7 +17,7 @@ const TopicCard = ({ topic }) => {
   };
 
   return (
-    <Link to={`/topics/${topic.id}`}>
+    <Link to={`/admin/topics/${topic.id}`}>
       <div className="bg-white rounded-lg border border-gray-200 p-4 md:p-6 hover:shadow-md transition-shadow cursor-pointer h-full">
         <div className="flex items-start justify-between gap-2 mb-2 md:mb-3">
           <h3 className="text-base md:text-lg font-semibold text-gray-900 flex-1">{topic.title}</h3>
