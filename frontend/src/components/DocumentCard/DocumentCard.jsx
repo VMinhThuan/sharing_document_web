@@ -10,7 +10,7 @@ const DocumentCard = ({ document }) => {
   };
 
   return (
-    <Link to={`/documents/${document.id}`}>
+    <Link to={`/admin/documents/${document.id}`}>
       <div className="bg-white rounded-lg border border-gray-200 p-4 md:p-5 hover:shadow-md transition-shadow cursor-pointer h-full">
         <div className="flex items-start gap-3 md:gap-4">
           <div className="text-3xl md:text-4xl flex-shrink-0">{getFileIcon(document.type)}</div>

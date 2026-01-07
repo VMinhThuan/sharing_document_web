@@ -92,9 +92,9 @@ const UploadDocument = () => {
     console.log('Uploading document:', { ...formData, file: selectedFile });
     // TODO: Implement API call
     if (topicId) {
-      navigate(`/topics/${topicId}`);
+      navigate(`/admin/topics/${topicId}`);
     } else {
-      navigate('/documents');
+      navigate('/admin/documents');
     }
   };
 

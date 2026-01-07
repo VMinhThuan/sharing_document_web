@@ -28,7 +28,7 @@ const CreateTopic = () => {
     e.preventDefault();
     console.log('Creating topic:', formData);
     // TODO: Implement API call
-    navigate('/topics');
+    navigate('/admin/topics');
   };
 
   return (
@@ -136,7 +136,7 @@ const CreateTopic = () => {
             {/* Actions */}
             <div className="flex items-center justify-end gap-4 pt-6 border-t border-gray-200">
               <Link
-                to="/topics"
+                to="/admin/topics"
                 className="text-gray-600 hover:text-gray-900 font-medium transition-colors"
               >
                 Cancel

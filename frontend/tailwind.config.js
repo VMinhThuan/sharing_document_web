@@ -5,7 +5,33 @@ export default {
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        "primary": "#3b82f6",
+        "primary-hover": "#2563eb",
+        "background-light": "#f3f4f6",
+        "background-dark": "#0f172a",
+        "surface-light": "#ffffff",
+        "surface-dark": "#1e293b",
+        "border-light": "#e2e8f0",
+        "border-dark": "#334155",
+        "text-light": "#1e293b",
+        "text-dark": "#f8fafc",
+        "text-muted-light": "#64748b",
+        "text-muted-dark": "#94a3b8",
+      },
+      fontFamily: {
+        "display": ["Lexend", "sans-serif"],
+        "body": ["Noto Sans", "sans-serif"],
+      },
+      borderRadius: {
+        "DEFAULT": "0.25rem",
+        "lg": "0.5rem",
+        "xl": "0.75rem",
+        "2xl": "1rem",
+        "full": "9999px"
+      },
+    },
   },
   plugins: [],
 }

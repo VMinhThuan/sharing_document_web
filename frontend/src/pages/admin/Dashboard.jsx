@@ -1,6 +1,6 @@
-import TopSearchBar from '../components/TopSearchBar';
-import TopicCard from '../components/TopicCard';
-import DocumentCard from '../components/DocumentCard';
+import TopSearchBar from '../../components/TopSearchBar/TopSearchBar';
+import TopicCard from '../../components/TopicCard/TopicCard';
+import DocumentCard from '../../components/DocumentCard/DocumentCard';
 
 const Dashboard = () => {
   // Mock data - Stats cards
@@ -110,7 +110,7 @@ const Dashboard = () => {
         <div className="mb-6 md:mb-8">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 mb-4">
             <h2 className="text-lg md:text-xl font-semibold text-gray-900">Recommended Topics</h2>
-            <a href="/topics" className="text-xs md:text-sm text-blue-600 hover:text-blue-700 font-medium">
+            <a href="/admin/topics" className="text-xs md:text-sm text-blue-600 hover:text-blue-700 font-medium">
               View all →
             </a>
           </div>
@@ -125,7 +125,7 @@ const Dashboard = () => {
         <div>
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 mb-4">
             <h2 className="text-lg md:text-xl font-semibold text-gray-900">Recommended Documents</h2>
-            <a href="/documents" className="text-xs md:text-sm text-blue-600 hover:text-blue-700 font-medium">
+            <a href="/admin/documents" className="text-xs md:text-sm text-blue-600 hover:text-blue-700 font-medium">
               View all →
             </a>
           </div>
