@@ -1,0 +1,85 @@
+/* Custom Popover Styles for Sidebar User Profile */
+
+/* Target the specific class we will add to the Popover logic */
+.sidebar-user-popover .ant-popover-inner {
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  padding: 8px 0; /* Reset default padding */
+}
+
+.sidebar-user-popover .ant-popover-arrow::before {
+  background-color: #ffffff;
+}
+
+/* Text Colors */
+.sidebar-user-popover a,
+.sidebar-user-popover button {
+  color: #374151 !important; /* Gray-700 */
+  transition: all 0.2s;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+/* Hover States */
+.sidebar-user-popover a:hover,
+.sidebar-user-popover button:hover {
+  background-color: #f3f4f6 !important; /* Gray-100 */
+  color: #111827 !important; /* Gray-900 */
+}
+
+/* Icon Colors */
+.sidebar-user-popover .material-symbols-outlined {
+  color: #6b7280; /* Gray-500 */
+}
+.sidebar-user-popover a:hover .material-symbols-outlined,
+.sidebar-user-popover button:hover .material-symbols-outlined {
+  color: #374151; /* Gray-700 */
+}
+
+/* Sign Out Specifics */
+.sidebar-user-popover button.text-red-600 {
+  color: #ef4444 !important; /* Red-500 */
+}
+.sidebar-user-popover button.text-red-600:hover {
+  background-color: #fef2f2 !important; /* Red-50 */
+  color: #dc2626 !important; /* Red-600 */
+}
+.sidebar-user-popover button.text-red-600 .material-symbols-outlined {
+  color: #ef4444 !important;
+}
+.sidebar-user-popover button.text-red-600:hover .material-symbols-outlined {
+  color: #dc2626 !important;
+}
+
+/* Dark Mode Overrides (if body has 'dark' class) */
+.dark .sidebar-user-popover .ant-popover-inner {
+  background-color: #1f2937; /* Gray-800 */
+  border: 1px solid #374151; /* Gray-700 */
+}
+
+.dark .sidebar-user-popover .ant-popover-arrow::before {
+  background-color: #1f2937;
+}
+
+.dark .sidebar-user-popover a,
+.dark .sidebar-user-popover button {
+  color: #e5e7eb !important; /* Gray-200 */
+}
+
+.dark .sidebar-user-popover a:hover,
+.dark .sidebar-user-popover button:hover {
+  background-color: #374151 !important; /* Gray-700 */
+  color: #ffffff !important;
+}
+
+.dark .sidebar-user-popover .material-symbols-outlined {
+  color: #9ca3af; /* Gray-400 */
+}
+
+.dark .sidebar-user-popover button.text-red-600:hover {
+  background-color: rgba(239, 68, 68, 0.1) !important;
+  color: #f87171 !important; /* Red-400 */
+}

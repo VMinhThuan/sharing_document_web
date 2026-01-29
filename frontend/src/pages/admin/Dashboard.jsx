@@ -1,82 +1,89 @@
-import TopSearchBar from '../../components/TopSearchBar/TopSearchBar';
-import TopicCard from '../../components/TopicCard/TopicCard';
-import DocumentCard from '../../components/DocumentCard/DocumentCard';
+import { useEffect, useState } from "react";
+import TopSearchBar from "../../components/TopSearchBar/TopSearchBar";
+import DocumentCard from "../../components/DocumentCard/DocumentCard";
+import { getDashboardStatsApi, getDocumentsApi } from "../../services/api";
+
+import { Spin } from "antd";
 
 const Dashboard = () => {
-  // Mock data - Stats cards
-  const stats = [
-    { label: 'Active Topics', value: '24', icon: '📚', color: 'bg-blue-50 text-blue-700' },
-    { label: 'Documents Created', value: '156', icon: '📄', color: 'bg-green-50 text-green-700' },
-    { label: 'Study Hours', value: '342', icon: '⏱️', color: 'bg-purple-50 text-purple-700' },
-    { label: 'Learning Streak', value: '12 days', icon: '🔥', color: 'bg-orange-50 text-orange-700' },
-  ];
+  const [stats, setStats] = useState({
+    users: { total: 0 },
+    documents: { total: 0, pending: 0 },
+    categories: { total: 0 },
+  });
+  const [recentDocs, setRecentDocs] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Mock data - Recommended Topics
-  const recommendedTopics = [
-    {
-      id: 1,
-      title: 'Machine Learning Fundamentals',
-      subject: 'Computer Science',
-      description: 'Core concepts and algorithms in machine learning',
-      visibility: 'public',
-      documentCount: 8,
-      createdAt: '2 days ago',
-    },
-    {
-      id: 2,
-      title: 'React Best Practices',
-      subject: 'Web Development',
-      description: 'Advanced patterns and techniques for React development',
-      visibility: 'friends',
-      documentCount: 12,
-      createdAt: '1 week ago',
-    },
-    {
-      id: 3,
-      title: 'Data Structures & Algorithms',
-      subject: 'Computer Science',
-      description: 'Essential data structures and algorithmic problem-solving',
-      visibility: 'public',
-      documentCount: 15,
-      createdAt: '3 days ago',
-    },
-  ];
+  useEffect(() => {
+    const fetchData = async () => {
+      // ... existing code
+      try {
+        const [statsRes, docsRes] = await Promise.all([
+          getDashboardStatsApi(),
+          getDocumentsApi(),
+        ]);
 
-  // Mock data - Recommended Documents
-  const recommendedDocuments = [
-    {
-      id: 1,
-      title: 'Introduction to Neural Networks.pdf',
-      description: 'Comprehensive guide to understanding neural network architectures',
-      type: 'pdf',
-      size: '2.4 MB',
-      uploadedAt: '3 hours ago',
-      aiSummary: 'Covers feedforward networks, backpropagation, and activation functions',
-    },
-    {
-      id: 2,
-      title: 'React Hooks Deep Dive.docx',
-      description: 'Detailed explanation of React hooks and their use cases',
-      type: 'word',
-      size: '1.8 MB',
-      uploadedAt: '1 day ago',
-      aiSummary: 'Explores useState, useEffect, useContext, and custom hooks',
-    },
-    {
-      id: 3,
-      title: 'Algorithm Complexity Analysis.xlsx',
-      description: 'Spreadsheet with complexity analysis of common algorithms',
-      type: 'excel',
-      size: '856 KB',
-      uploadedAt: '2 days ago',
-      aiSummary: 'Time and space complexity comparisons for sorting and searching algorithms',
-    },
-  ];
+        if (statsRes && statsRes.statusCode === 200) {
+          setStats(statsRes.data);
+        }
+        if (docsRes && docsRes.statusCode === 200) {
+          setRecentDocs(docsRes.data.slice(0, 3)); // Take top 3
+        }
+      } catch (error) {
+        console.error("Failed to fetch dashboard data", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   const handleSearch = (query) => {
-    console.log('Searching for:', query);
-    // TODO: Implement search functionality
+    console.log("Searching for:", query);
   };
+
+  const formatBytes = (bytes, decimals = 2) => {
+    if (!+bytes) return "0 Bytes";
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
+  };
+
+  const statCards = [
+    {
+      label: "Total Users",
+      value: stats.users.total,
+      icon: "👥",
+      color: "bg-blue-50 text-blue-700",
+    },
+    {
+      label: "Total Documents",
+      value: stats.documents.total,
+      icon: "📄",
+      color: "bg-green-50 text-green-700",
+    },
+    {
+      label: "Pending Reviews",
+      value: stats.documents.pending,
+      icon: "⏳",
+      color: "bg-yellow-50 text-yellow-700",
+    },
+    {
+      label: "Total Categories",
+      value: stats.categories?.total || 0,
+      icon: "🏷️",
+      color: "bg-purple-50 text-purple-700",
+    },
+  ];
+
+  if (loading)
+    return (
+      <div className="lg:ml-64 h-screen flex justify-center items-center bg-gray-50">
+        <Spin size="large" tip="Loading..." />
+      </div>
+    );
 
   return (
     <div className="lg:ml-64 p-4 md:p-6 lg:p-8 bg-gray-50 min-h-screen">
@@ -88,17 +95,23 @@ const Dashboard = () => {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
-          {stats.map((stat, index) => (
+          {statCards.map((stat, index) => (
             <div
               key={index}
               className="bg-white rounded-lg border border-gray-200 p-4 md:p-6 shadow-sm"
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs md:text-sm text-gray-600 mb-1">{stat.label}</p>
-                  <p className="text-xl md:text-2xl font-bold text-gray-900">{stat.value}</p>
+                  <p className="text-xs md:text-sm text-gray-600 mb-1">
+                    {stat.label}
+                  </p>
+                  <p className="text-xl md:text-2xl font-bold text-gray-900">
+                    {stat.value}
+                  </p>
                 </div>
-                <div className={`w-10 h-10 md:w-12 md:h-12 rounded-lg flex items-center justify-center text-xl md:text-2xl ${stat.color}`}>
+                <div
+                  className={`w-10 h-10 md:w-12 md:h-12 rounded-lg flex items-center justify-center text-xl md:text-2xl ${stat.color}`}
+                >
                   {stat.icon}
                 </div>
               </div>
@@ -106,34 +119,44 @@ const Dashboard = () => {
           ))}
         </div>
 
-        {/* Recommended Topics */}
-        <div className="mb-6 md:mb-8">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 mb-4">
-            <h2 className="text-lg md:text-xl font-semibold text-gray-900">Recommended Topics</h2>
-            <a href="/admin/topics" className="text-xs md:text-sm text-blue-600 hover:text-blue-700 font-medium">
-              View all →
-            </a>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-            {recommendedTopics.map((topic) => (
-              <TopicCard key={topic.id} topic={topic} />
-            ))}
-          </div>
-        </div>
-
-        {/* Recommended Documents */}
+        {/* Recommended Documents (Now Recent Documents) */}
         <div>
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 mb-4">
-            <h2 className="text-lg md:text-xl font-semibold text-gray-900">Recommended Documents</h2>
-            <a href="/admin/documents" className="text-xs md:text-sm text-blue-600 hover:text-blue-700 font-medium">
+            <h2 className="text-lg md:text-xl font-semibold text-gray-900">
+              Recent Documents
+            </h2>
+            <a
+              href="/admin/documents"
+              className="text-xs md:text-sm text-blue-600 hover:text-blue-700 font-medium"
+            >
               View all →
             </a>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-            {recommendedDocuments.map((doc) => (
-              <DocumentCard key={doc.id} document={doc} />
-            ))}
-          </div>
+          {recentDocs.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+              {recentDocs.map((doc) => (
+                <DocumentCard
+                  key={doc._id}
+                  document={
+                    // Mapping backend doc to DocumentCard props if needed
+                    // Backend: { _id, title, description, fileType, size, uploadedAt, ... }
+                    // Card expects: { id, title, description, type, size, uploadedAt, aiSummary }
+                    {
+                      id: doc._id,
+                      title: doc.title,
+                      description: doc.description,
+                      type: doc.fileType,
+                      size: formatBytes(doc.size),
+                      uploadedAt: new Date(doc.createdAt).toLocaleDateString(),
+                      aiSummary: "AI Summary not available yet",
+                    }
+                  }
+                />
+              ))}
+            </div>
+          ) : (
+            <p>No documents found.</p>
+          )}
         </div>
       </div>
     </div>
@@ -141,4 +164,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-
