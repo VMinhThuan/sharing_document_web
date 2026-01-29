@@ -1,0 +1,17 @@
+/* Users.css */
+/* Fix input text color in Ant Design modal being white on white background */
+.user-modal .ant-input,
+.user-modal .ant-input-password .ant-input,
+.user-modal .ant-select-selection-item,
+.user-modal .ant-select-selection-placeholder {
+  color: #334155 !important; /* Slate-700 */
+}
+
+/* Ensure placeholder is visible but distinct */
+.user-modal .ant-input::placeholder {
+  color: #94a3b8 !important; /* Slate-400 */
+}
+
+.user-modal .ant-select-dropdown .ant-select-item-option-content {
+  color: #334155 !important;
+}

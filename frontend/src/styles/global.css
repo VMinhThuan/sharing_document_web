@@ -4,9 +4,9 @@
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
-    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
-    sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu",
+    "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -46,3 +46,43 @@ body {
 .toggle-checkbox:checked + .toggle-label {
   background-color: #3b82f6;
 }
+
+/* Force Ant Design Input to be transparent/consistent & Style Placeholders/Borders */
+.ant-input,
+.ant-input-password,
+.ant-input-affix-wrapper {
+  background-color: transparent !important;
+  border-color: #475569 !important; /* slate-600 */
+  color: #fff !important; /* Input text color white for dark theme (since card is dark-ish or on dark bg) */
+}
+
+/* Placeholder Color */
+.ant-input::placeholder {
+  color: #94a3b8 !important; /* slate-400 - Visible but subtle */
+}
+
+/* Input Focus State */
+.ant-input:focus,
+.ant-input-password:focus,
+.ant-input-affix-wrapper:focus,
+.ant-input-affix-wrapper-focused {
+  border-color: #3b82f6 !important; /* primary blue */
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2) !important;
+}
+
+/* Verify Icon Colors in Input (Scoped to input prefix to avoid affecting Message/Modal icons) */
+.ant-input-prefix .anticon,
+.ant-input-suffix .anticon {
+  color: #94a3b8 !important;
+}
+
+/* Back to Home Button Style Override (if strictly needed via CSS, or done in JSX) 
+   But user asked to make it "lighter". In JSX it is "text-slate-500 hover:text-slate-800 ... dark:text-slate-400 dark:hover:text-white".
+   If user wants it lighter by default, we can adjust here or in JSX.
+   Let's assume the user means "brighter/more visible".
+   I'll add a utility class or just rely on JSX updates if I were editing JSX. 
+   Since I am editing CSS, I will add a specific class for it if I can, or just generic overrides if applicable.
+   
+   However, the user asked to fix the input placeholder and border. 
+   Let's stick to the Input fixes here. I will fix the Button in Login.jsx.
+*/

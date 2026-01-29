@@ -1,0 +1,18 @@
+/* Documents.css */
+/* Fix input text color in Ant Design modal being white on white background */
+.document-modal .ant-input,
+.document-modal .ant-input-number-input,
+.document-modal .ant-select-selection-item,
+.document-modal .ant-select-selection-placeholder {
+  color: #334155 !important; /* Slate-700 */
+}
+
+/* Ensure placeholder is visible but distinct */
+.document-modal .ant-input::placeholder {
+  color: #94a3b8 !important; /* Slate-400 */
+}
+
+/* Fix for Select dropdown items if needed, typically they are handled globally but let's be safe */
+.ant-select-dropdown .ant-select-item-option-content {
+  color: #334155 !important;
+}
