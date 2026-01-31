@@ -17,13 +17,12 @@ import Comments from "./pages/admin/Comments";
 // Client Pages
 import Home from "./pages/client/Home";
 import Library from "./pages/client/Library";
-import Roadmap from "./pages/client/Roadmap";
 import Uploads from "./pages/client/Uploads";
 import Favorites from "./pages/client/Favorites";
-import StudyGroups from "./pages/client/StudyGroups";
 import Preferences from "./pages/client/Preferences";
 import HelpCenter from "./pages/client/HelpCenter";
 import LibraryDetail from "./pages/client/LibraryDetail";
+import ExploreDocs from "./pages/client/ExploreDocs";
 
 // Auth & Error Pages
 import Login from "./pages/auth/Login";
@@ -67,11 +66,11 @@ function App() {
           <Route element={<ClientLayout />}>
             <Route path="/" element={<Home />} />
             <Route path="/library" element={<Library />} />
+            <Route path="/documents" element={<ExploreDocs />} />
+            <Route path="/documents/:id" element={<DocumentDetail />} />
             <Route path="/library/:id" element={<LibraryDetail />} />
-            <Route path="/roadmap" element={<Roadmap />} />
             <Route path="/uploads" element={<Uploads />} />
             <Route path="/favorites" element={<Favorites />} />
-            <Route path="/study-groups" element={<StudyGroups />} />
             <Route path="/preferences" element={<Preferences />} />
             <Route path="/help-center" element={<HelpCenter />} />
           </Route>

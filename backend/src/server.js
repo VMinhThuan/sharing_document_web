@@ -45,7 +45,17 @@ app.use(
     optionsSuccessStatus: 204,
   }),
 );
-app.use(helmet());
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+        "frame-ancestors": ["'self'", process.env.FRONTEND_URL],
+      },
+    },
+    frameguard: false, // Disables X-Frame-Options
+  }),
+);
 if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
 }

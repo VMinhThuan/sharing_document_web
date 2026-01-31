@@ -1,4 +1,5 @@
 const Comment = require("../models/comment.model");
+const Document = require("../models/document.model");
 
 const getAllComments = async () => {
   return await Comment.find()
@@ -7,13 +8,60 @@ const getAllComments = async () => {
     .sort({ createdAt: -1 });
 };
 
-const deleteComment = async (id) => {
-  const comment = await Comment.findByIdAndDelete(id);
+const getCommentsByDocument = async (documentId) => {
+  return await Comment.find({ document: documentId })
+    .populate("user", "fullName email avatar")
+    .sort({ createdAt: -1 });
+};
+
+const createComment = async (userId, documentId, content) => {
+  const document = await Document.findById(documentId);
+  if (!document) {
+    throw new Error("Document not found");
+  }
+
+  const comment = await Comment.create({
+    content,
+    user: userId,
+    document: documentId,
+  });
+
+  return await comment.populate("user", "fullName email avatar");
+};
+
+const deleteComment = async (id, userId = null, role = null) => {
+  const comment = await Comment.findById(id);
   if (!comment) throw new Error("Comment not found");
+
+  // If userId and role provides, check authorization
+  // Admin can delete any. User can only delete their own.
+  if (userId && role !== "admin") {
+    if (comment.user.toString() !== userId.toString()) {
+      throw new Error("Not authorized to delete this comment");
+    }
+  }
+
+  await comment.deleteOne();
+  return comment;
+};
+
+const updateComment = async (id, userId, content, role) => {
+  const comment = await Comment.findById(id);
+  if (!comment) throw new Error("Comment not found");
+
+  if (role !== "admin" && comment.user.toString() !== userId.toString()) {
+    throw new Error("Not authorized to update this comment");
+  }
+
+  comment.content = content;
+  await comment.save();
   return comment;
 };
 
 module.exports = {
   getAllComments,
+  getCommentsByDocument,
+  createComment,
   deleteComment,
+  updateComment,
 };

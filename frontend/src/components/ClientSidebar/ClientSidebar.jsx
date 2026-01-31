@@ -65,20 +65,7 @@ const ClientSidebar = () => {
                   <span className="material-symbols-outlined">menu_book</span>
                   <span className="text-sm font-medium">My Library</span>
                 </NavLink>
-                <NavLink
-                  to="/roadmap"
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${isActive ? "bg-primary/10 text-primary" : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"}`
-                  }
-                >
-                  <span
-                    className="material-symbols-outlined"
-                    style={{ fontVariationSettings: "'FILL' 1" }}
-                  >
-                    map
-                  </span>
-                  <span className="text-sm font-medium">Roadmaps</span>
-                </NavLink>
+
                 <NavLink
                   to="/uploads"
                   className={({ isActive }) =>
@@ -98,15 +85,6 @@ const ClientSidebar = () => {
                 >
                   <span className="material-symbols-outlined">favorite</span>
                   <span className="text-sm font-medium">Favorites</span>
-                </NavLink>
-                <NavLink
-                  to="/study-groups"
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${isActive ? "bg-primary/10 text-primary" : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"}`
-                  }
-                >
-                  <span className="material-symbols-outlined">groups</span>
-                  <span className="text-sm font-medium">Study Groups</span>
                 </NavLink>
               </>
             )}

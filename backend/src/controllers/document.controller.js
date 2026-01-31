@@ -14,6 +14,27 @@ const getDocuments = async (req, res) => {
   }
 };
 
+const getMyDocuments = async (req, res) => {
+  try {
+    const docs = await documentService.getUserDocuments(req.user._id);
+    successResponse(res, 200, "Your documents retrieved", docs);
+  } catch (error) {
+    errorResponse(res, 500, "Server Error", error.message);
+  }
+};
+
+const getDocument = async (req, res) => {
+  try {
+    const doc = await documentService.getDocumentById(req.params.id);
+    if (!doc) {
+      return errorResponse(res, 404, "Document not found");
+    }
+    successResponse(res, 200, "Document retrieved", doc);
+  } catch (error) {
+    errorResponse(res, 500, "Server Error", error.message);
+  }
+};
+
 const approveDocument = async (req, res) => {
   try {
     const doc = await documentService.approveDocument(req.params.id);
@@ -70,13 +91,14 @@ const createDocument = async (req, res) => {
     const docData = {
       title,
       description,
-      category: category || "Other",
+      category:
+        category && category.match(/^[0-9a-fA-F]{24}$/) ? category : undefined,
       score: score || 0,
       fileUrl: docFileUrl,
       fileType: docFileType,
       size: docSize,
       uploadedBy: req.user._id,
-      status: "approved", // Admin created docs are auto-approved
+      status: req.user.role === "admin" ? "approved" : "pending",
     };
 
     // AI Analysis - Extract text and analyze
@@ -174,61 +196,54 @@ const viewDocument = async (req, res) => {
       return errorResponse(res, 404, "Document not found");
     }
 
-    // SIMPLIFIED LOGIC:
-    // Since we now upload files with type="authenticated", Cloudinary returns a fully signed, securely accessible URL
-    // as the 'path' property during upload. We saved this to the DB.
-    // So `doc.fileUrl` is ALREADY a valid, signed, authenticated URL.
-
-    // We just need to fetch it directly.
-    // SIMPLIFIED PROXY LOGIC:
-    // We upload files as 'image'/'auto' (public), so the URL should be accessible directly.
-    // We proxy it to avoid CORS issues and handle Content-Disposition correctly.
-
-    // We use the fileUrl directly from the DB.
-    // IMAGE PREVIEW STRATEGY:
-    // We fetch the PDF as a JPG thumbnail (page 1) to bypass potential PDF blocking/download behavior.
-
-    let previewUrl = doc.fileUrl;
-    if (previewUrl.endsWith(".pdf")) {
-      previewUrl = previewUrl.replace(".pdf", ".jpg");
-    }
+    // We use the direct fileUrl from DB.
+    // If Cloudinary returns 401 for public access to PDFs, our backend (with server-side access)
+    // can still fetch it or we can try to access it as a raw resource.
+    const fileUrl = doc.fileUrl;
 
     try {
       const response = await axios({
-        url: previewUrl,
+        url: fileUrl,
         method: "GET",
         responseType: "stream",
         headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.0.0 Safari/537.36",
+          "User-Agent": "Mozilla/5.0",
         },
       });
 
-      // It will be image/jpeg
       const contentType = response.headers["content-type"];
-      res.setHeader("Content-Type", contentType || "image/jpeg");
+      res.setHeader("Content-Type", contentType || "application/pdf");
       res.setHeader("Content-Disposition", "inline");
       response.data.pipe(res);
     } catch (axiosError) {
       console.error("View Document Error Status:", axiosError.response?.status);
+
+      // Fallback: If it's a PDF and direct access failed, try to serve it as an image transformation (page 1)
+      // or check if account settings allow it.
+      if (fileUrl.endsWith(".pdf") && axiosError.response?.status === 401) {
+        return errorResponse(
+          res,
+          401,
+          "Cloudinary PDF delivery is restricted. Please check account settings.",
+        );
+      }
+
       return errorResponse(res, 500, "Could not load document preview");
     }
   } catch (error) {
-    console.error(
-      "View Document Error:",
-      error.response?.status,
-      error.message,
-    );
+    console.error("View Document Error:", error.message);
     errorResponse(res, 500, "Could not load document", error.message);
   }
 };
 
 module.exports = {
   getDocuments,
+  getDocument,
   createDocument,
   updateDocument,
   approveDocument,
   rejectDocument,
   deleteDocument,
   viewDocument,
+  getMyDocuments,
 };

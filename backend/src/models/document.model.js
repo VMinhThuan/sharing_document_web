@@ -45,8 +45,9 @@ const documentSchema = new mongoose.Schema({
     default: 0,
   },
   category: {
-    type: String,
-    default: "Uncategorized",
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Category",
+    required: false,
   },
   isPublic: {
     type: Boolean,
@@ -58,9 +59,11 @@ const documentSchema = new mongoose.Schema({
       type: String,
       default: "",
     },
-    topics: [{
-      type: String,
-    }],
+    topics: [
+      {
+        type: String,
+      },
+    ],
     policyViolation: {
       hasViolation: {
         type: Boolean,

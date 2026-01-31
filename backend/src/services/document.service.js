@@ -5,6 +5,7 @@ const getDocuments = async (status) => {
   const filter = status ? { status } : {};
   return await Document.find(filter)
     .populate("uploadedBy", "fullName email")
+    .populate("category", "name")
     .sort({ createdAt: -1 });
 };
 
@@ -46,12 +47,19 @@ const updateDocument = async (id, data) => {
 };
 
 const getDocumentById = async (id) => {
-  return await Document.findById(id);
+  return await Document.findById(id).populate("category", "name");
+};
+
+const getUserDocuments = async (userId) => {
+  return await Document.find({ uploadedBy: userId })
+    .populate("category", "name")
+    .sort({ createdAt: -1 });
 };
 
 module.exports = {
   getDocuments,
   getDocumentById,
+  getUserDocuments,
   createDocument,
   updateDocument,
   approveDocument,

@@ -70,6 +70,14 @@ export const getDocumentsApi = (status) => {
   return axios.get(`/api/v1/documents?status=${status || ""}`);
 };
 
+export const getMyDocumentsApi = () => {
+  return axios.get("/api/v1/documents/me");
+};
+
+export const getDocumentByIdApi = (id) => {
+  return axios.get(`/api/v1/documents/${id}`);
+};
+
 export const approveDocumentApi = (id) => {
   return axios.put(`/api/v1/documents/${id}/approve`);
 };

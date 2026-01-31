@@ -8,9 +8,21 @@ const { upload } = require("../configs/cloudinary");
 router.post(
   "/",
   protect,
-  authorize("admin"),
+  authorize("admin", "user"),
   upload.single("file"),
   documentController.createDocument,
+);
+router.get(
+  "/me",
+  protect,
+  authorize("admin", "user"),
+  documentController.getMyDocuments,
+);
+router.get(
+  "/:id",
+  protect,
+  authorize("admin", "user"),
+  documentController.getDocument,
 );
 router.put(
   "/:id",
