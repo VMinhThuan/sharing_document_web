@@ -1,4 +1,6 @@
 const documentService = require("../services/document.service");
+const aiService = require("../services/ai.service");
+const documentParserService = require("../services/documentParser.service");
 const { successResponse, errorResponse } = require("../utils/response");
 
 const getDocuments = async (req, res) => {
@@ -74,6 +76,71 @@ const createDocument = async (req, res) => {
       uploadedBy: req.user._id,
       status: "approved", // Admin created docs are auto-approved
     };
+
+    // AI Analysis - Extract text and analyze
+    let aiAnalysisResult = null;
+    try {
+      console.log("Starting AI analysis for document...");
+      
+      // Extract text from document
+      const extractedText = await documentParserService.extractTextFromDocument(
+        docFileUrl,
+        docFileType
+      );
+      
+      // If we have meaningful text, analyze it with AI
+      if (extractedText && extractedText.length > 50) {
+        console.log("Extracted text length:", extractedText.length);
+        const analysis = await aiService.analyzeDocument(extractedText);
+        
+        if (analysis.success) {
+          aiAnalysisResult = {
+            aiSummary: analysis.data.aiSummary,
+            topics: analysis.data.topics,
+            policyViolation: analysis.data.policyViolation,
+            isEducational: analysis.data.isEducational,
+            recommendedCategory: analysis.data.recommendedCategory,
+            analyzedAt: new Date(),
+          };
+          
+          // Auto-update category if recommended
+          if (analysis.data.recommendedCategory && !category) {
+            docData.category = analysis.data.recommendedCategory;
+          }
+          
+          // Auto-reject if policy violation detected
+          if (analysis.data.policyViolation.hasViolation) {
+            docData.status = "rejected";
+            console.log("Document rejected due to policy violation:", analysis.data.policyViolation);
+          }
+        } else {
+          console.error("AI analysis failed:", analysis.error);
+        }
+      } else {
+        // Use description as fallback for AI analysis
+        if (description && description.length > 50) {
+          const analysis = await aiService.analyzeDocument(description);
+          if (analysis.success) {
+            aiAnalysisResult = {
+              aiSummary: analysis.data.aiSummary,
+              topics: analysis.data.topics,
+              policyViolation: analysis.data.policyViolation,
+              isEducational: analysis.data.isEducational,
+              recommendedCategory: analysis.data.recommendedCategory,
+              analyzedAt: new Date(),
+            };
+          }
+        }
+      }
+    } catch (aiError) {
+      console.error("AI analysis error (non-blocking):", aiError);
+      // Continue with document creation even if AI fails
+    }
+
+    // Add AI analysis to document data
+    if (aiAnalysisResult) {
+      docData.aiAnalysis = aiAnalysisResult;
+    }
 
     const doc = await documentService.createDocument(docData);
     successResponse(res, 201, "Document created", doc);

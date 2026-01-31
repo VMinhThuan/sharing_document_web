@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react";
-import TopSearchBar from "../../components/TopSearchBar/TopSearchBar";
 import DocumentCard from "../../components/DocumentCard/DocumentCard";
 import { getDashboardStatsApi, getDocumentsApi } from "../../services/api";
-
 import { Spin } from "antd";
 
 const Dashboard = () => {
@@ -80,19 +78,18 @@ const Dashboard = () => {
 
   if (loading)
     return (
-      <div className="lg:ml-64 h-screen flex justify-center items-center bg-gray-50">
+      <div className="flex justify-center items-center h-96">
         <Spin size="large" tip="Loading..." />
       </div>
     );
 
   return (
-    <div className="lg:ml-64 p-4 md:p-6 lg:p-8 bg-gray-50 min-h-screen">
-      <div className="max-w-7xl mx-auto">
-        {/* TopSearchBar */}
-        <div className="mb-6 md:mb-8">
-          <TopSearchBar onSearch={handleSearch} />
-        </div>
-
+    <div>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-800 mb-2">Dashboard</h1>
+        <p className="text-gray-500">Overview of your platform</p>
+      </div>
+      <div>
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
           {statCards.map((stat, index) => (
@@ -128,6 +125,10 @@ const Dashboard = () => {
             <a
               href="/admin/documents"
               className="text-xs md:text-sm text-blue-600 hover:text-blue-700 font-medium"
+              onClick={(e) => {
+                e.preventDefault();
+                window.location.href = "/admin/documents";
+              }}
             >
               View all →
             </a>

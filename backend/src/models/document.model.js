@@ -52,6 +52,42 @@ const documentSchema = new mongoose.Schema({
     type: Boolean,
     default: true,
   },
+  // AI Analysis fields
+  aiAnalysis: {
+    aiSummary: {
+      type: String,
+      default: "",
+    },
+    topics: [{
+      type: String,
+    }],
+    policyViolation: {
+      hasViolation: {
+        type: Boolean,
+        default: false,
+      },
+      violationType: {
+        type: String,
+        default: null,
+      },
+      reason: {
+        type: String,
+        default: null,
+      },
+    },
+    isEducational: {
+      type: Boolean,
+      default: true,
+    },
+    recommendedCategory: {
+      type: String,
+      default: "General",
+    },
+    analyzedAt: {
+      type: Date,
+      default: null,
+    },
+  },
   createdAt: {
     type: Date,
     default: Date.now,

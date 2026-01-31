@@ -7,6 +7,9 @@ import AdminLayout from "./layouts/AdminLayout";
 
 // Admin Pages
 import Dashboard from "./pages/admin/Dashboard";
+import Analytics from "./pages/admin/Analytics";
+import DocumentsManagement from "./pages/admin/DocumentsManagement";
+import CommentsManagement from "./pages/admin/CommentsManagement";
 import Documents from "./pages/admin/Documents";
 import Categories from "./pages/admin/Categories";
 import UploadDocument from "./pages/admin/UploadDocument";
@@ -54,12 +57,16 @@ function App() {
           <Route path="/admin" element={<AdminRoute />}>
             <Route element={<AdminLayout />}>
               <Route index element={<Dashboard />} />
-              <Route path="categories" element={<Categories />} />
-              <Route path="documents" element={<Documents />} />
+              <Route path="analytics" element={<Analytics />} />
+              <Route path="documents" element={<DocumentsManagement />} />
+              <Route path="comments" element={<CommentsManagement />} />
+              {/* Legacy routes for backward compatibility */}
+              <Route path="documents-old" element={<Documents />} />
               <Route path="documents/:id" element={<DocumentDetail />} />
+              <Route path="categories" element={<Categories />} />
               <Route path="upload" element={<UploadDocument />} />
               <Route path="users" element={<Users />} />
-              <Route path="comments" element={<Comments />} />
+              <Route path="comments-old" element={<Comments />} />
               <Route path="library" element={<MyLibrary />} />
             </Route>
           </Route>

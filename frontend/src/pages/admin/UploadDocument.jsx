@@ -1,266 +1,329 @@
-import { useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  Upload,
+  Button,
+  Form,
+  Input,
+  message,
+  Card,
+  Spin,
+  Tag,
+  Alert,
+  Space,
+  Divider,
+} from "antd";
+import {
+  UploadOutlined,
+  FileTextOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined,
+  RobotOutlined,
+} from "@ant-design/icons";
+import { createDocumentApi } from "../../services/api";
+import StatusTag from "../../components/admin/StatusTag";
+
+const { TextArea } = Input;
 
 const UploadDocument = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const topicId = searchParams.get('topic');
-  
-  const [isDragging, setIsDragging] = useState(false);
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    tags: [],
-  });
-  const [tagInput, setTagInput] = useState('');
+  const [form] = Form.useForm();
+  const [fileList, setFileList] = useState([]);
+  const [uploading, setUploading] = useState(false);
+  const [aiAnalysis, setAiAnalysis] = useState(null);
+  const [analyzing, setAnalyzing] = useState(false);
 
-  const handleDragEnter = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(true);
-  };
+  const handleUpload = async (values) => {
+    if (fileList.length === 0) {
+      message.error("Please select a file to upload");
+      return;
+    }
 
-  const handleDragLeave = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-  };
+    setUploading(true);
+    setAnalyzing(true);
 
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-
-    const files = e.dataTransfer.files;
-    if (files && files.length > 0) {
-      setSelectedFile(files[0]);
-      // Auto-fill title from filename if title is empty
-      if (!formData.title) {
-        const fileName = files[0].name.replace(/\.[^/.]+$/, '');
-        setFormData({ ...formData, title: fileName });
+    try {
+      const formData = new FormData();
+      formData.append("file", fileList[0].originFileObj);
+      formData.append("title", values.title);
+      formData.append("description", values.description || "");
+      if (values.category) {
+        formData.append("category", values.category);
       }
-    }
-  };
-
-  const handleFileSelect = (e) => {
-    const files = e.target.files;
-    if (files && files.length > 0) {
-      setSelectedFile(files[0]);
-      // Auto-fill title from filename if title is empty
-      if (!formData.title) {
-        const fileName = files[0].name.replace(/\.[^/.]+$/, '');
-        setFormData({ ...formData, title: fileName });
+      if (values.score) {
+        formData.append("score", values.score);
       }
-    }
-  };
 
-  const handleInputChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
+      const res = await createDocumentApi(formData);
 
-  const handleTagKeyDown = (e) => {
-    if (e.key === 'Enter' && tagInput.trim()) {
-      e.preventDefault();
-      if (!formData.tags.includes(tagInput.trim())) {
-        setFormData({
-          ...formData,
-          tags: [...formData.tags, tagInput.trim()],
-        });
+      if (res && res.statusCode === 201) {
+        const document = res.data;
+        
+        // Show AI analysis if available
+        if (document.aiAnalysis) {
+          setAiAnalysis(document.aiAnalysis);
+          message.success("Document uploaded and analyzed successfully!");
+        } else {
+          message.success("Document uploaded successfully!");
+        }
+
+        // Auto-navigate after 3 seconds if AI analysis is shown
+        if (document.aiAnalysis) {
+          setTimeout(() => {
+            navigate("/admin/documents");
+          }, 5000);
+        } else {
+          navigate("/admin/documents");
+        }
+      } else {
+        message.error(res?.message || "Upload failed");
       }
-      setTagInput('');
+    } catch (error) {
+      console.error("Upload error:", error);
+      message.error("Failed to upload document");
+    } finally {
+      setUploading(false);
+      setAnalyzing(false);
     }
   };
 
-  const removeTag = (tagToRemove) => {
-    setFormData({
-      ...formData,
-      tags: formData.tags.filter(tag => tag !== tagToRemove),
-    });
-  };
+  const uploadProps = {
+    beforeUpload: (file) => {
+      const isValidType = [
+        "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/vnd.ms-excel",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/vnd.ms-powerpoint",
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      ].includes(file.type);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log('Uploading document:', { ...formData, file: selectedFile });
-    // TODO: Implement API call
-    if (topicId) {
-      navigate(`/admin/topics/${topicId}`);
-    } else {
-      navigate('/admin/documents');
-    }
+      if (!isValidType) {
+        message.error("Please upload PDF, Word, Excel, or PowerPoint files only");
+        return Upload.LIST_IGNORE;
+      }
+
+      const isLt10M = file.size / 1024 / 1024 < 10;
+      if (!isLt10M) {
+        message.error("File must be smaller than 10MB");
+        return Upload.LIST_IGNORE;
+      }
+
+      return false; // Prevent auto upload
+    },
+    fileList,
+    onChange: ({ fileList: newFileList }) => {
+      setFileList(newFileList);
+      // Auto-fill title from filename
+      if (newFileList.length > 0 && !form.getFieldValue("title")) {
+        const fileName = newFileList[0].name.replace(/\.[^/.]+$/, "");
+        form.setFieldsValue({ title: fileName });
+      }
+    },
+    maxCount: 1,
   };
 
   return (
-    <div className="lg:ml-64 p-4 md:p-6 lg:p-8 bg-gray-50 min-h-screen flex items-center justify-center">
-      <div className="w-full max-w-2xl">
-        <div className="bg-white rounded-lg border border-gray-200 p-4 md:p-6 lg:p-8 shadow-sm">
-          <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-4 md:mb-6">Upload Document</h1>
+    <div>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-800 mb-2">
+          Upload Document
+        </h1>
+        <p className="text-gray-500">
+          Upload a document. AI will automatically analyze its content and check for policy violations.
+        </p>
+      </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Drag & Drop Area */}
-            <div
-              onDragEnter={handleDragEnter}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              className={`border-2 border-dashed rounded-lg p-8 md:p-12 text-center transition-colors ${
-                isDragging
-                  ? 'border-blue-500 bg-blue-50'
-                  : 'border-gray-300 hover:border-gray-400'
-              }`}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Upload Form */}
+        <Card title="Document Information" className="h-fit">
+          <Form
+            form={form}
+            layout="vertical"
+            onFinish={handleUpload}
+            disabled={uploading}
+          >
+            <Form.Item
+              name="file"
+              label="Document File"
+              rules={[{ required: true, message: "Please upload a file" }]}
             >
-              <div className="text-6xl mb-4">📄</div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Drag & drop your document here
-              </h3>
-              <p className="text-sm text-gray-500 mb-4">
-                or click to browse files
+              <Upload {...uploadProps}>
+                <Button icon={<UploadOutlined />}>Select File</Button>
+              </Upload>
+              <p className="text-xs text-gray-500 mt-2">
+                Supported: PDF, Word, Excel, PowerPoint (Max 10MB)
               </p>
-              <input
-                type="file"
-                id="file-upload"
-                onChange={handleFileSelect}
-                className="hidden"
-                accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
-              />
-              <label
-                htmlFor="file-upload"
-                className="inline-block px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium cursor-pointer"
-              >
-                Select File
-              </label>
-              <p className="text-xs text-gray-400 mt-4">
-                Supported formats: PDF, Word, Excel, PowerPoint
-              </p>
-            </div>
+            </Form.Item>
 
-            {/* Selected File Info */}
-            {selectedFile && (
-              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">📄</span>
-                    <div>
-                      <p className="font-medium text-gray-900">{selectedFile.name}</p>
-                      <p className="text-sm text-gray-500">
-                        {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedFile(null)}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    ✕
-                  </button>
-                </div>
-              </div>
-            )}
+            <Form.Item
+              name="title"
+              label="Title"
+              rules={[{ required: true, message: "Please enter a title" }]}
+            >
+              <Input placeholder="Document title" />
+            </Form.Item>
 
-            {/* Document Title */}
-            <div>
-              <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
-                Document Title *
-              </label>
-              <input
-                type="text"
-                id="title"
-                name="title"
-                value={formData.title}
-                onChange={handleInputChange}
-                required
-                placeholder="Enter document title"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-400"
-              />
-            </div>
-
-            {/* Description */}
-            <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
-                Description
-              </label>
-              <textarea
-                id="description"
-                name="description"
-                value={formData.description}
-                onChange={handleInputChange}
+            <Form.Item name="description" label="Description">
+              <TextArea
                 rows={4}
                 placeholder="Describe the document content..."
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-400 resize-none"
               />
-            </div>
+            </Form.Item>
 
-            {/* Tags Input */}
-            <div>
-              <label htmlFor="tags" className="block text-sm font-medium text-gray-700 mb-2">
-                Tags
-              </label>
-              <div className="flex flex-wrap gap-2 mb-2">
-                {formData.tags.map((tag, index) => (
-                  <span
-                    key={index}
-                    className="inline-flex items-center gap-1 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm font-medium"
-                  >
-                    {tag}
-                    <button
-                      type="button"
-                      onClick={() => removeTag(tag)}
-                      className="text-blue-700 hover:text-blue-900 ml-1"
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))}
-              </div>
-              <input
-                type="text"
-                id="tags"
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                onKeyDown={handleTagKeyDown}
-                placeholder="Type a tag and press Enter"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-400"
+            <Form.Item name="category" label="Category">
+              <Input placeholder="e.g., Mathematics, Science, Literature" />
+            </Form.Item>
+
+            <Form.Item name="score" label="Score (Points)">
+              <Input
+                type="number"
+                min={0}
+                placeholder="0"
+                defaultValue={0}
               />
-              <p className="text-xs text-gray-500 mt-1">Press Enter to add a tag</p>
-            </div>
+            </Form.Item>
 
-            {/* AI Hint */}
-            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="flex items-start gap-3">
-                <span className="text-xl">🤖</span>
-                <p className="text-sm text-blue-700">
-                  AI will automatically generate summary and keywords
+            <Form.Item>
+              <Space>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  loading={uploading}
+                  icon={<UploadOutlined />}
+                >
+                  {uploading ? "Uploading..." : "Upload Document"}
+                </Button>
+                <Button onClick={() => navigate("/admin/documents")}>
+                  Cancel
+                </Button>
+              </Space>
+            </Form.Item>
+          </Form>
+        </Card>
+
+        {/* AI Analysis Results */}
+        <div>
+          {analyzing && !aiAnalysis && (
+            <Card>
+              <div className="text-center py-8">
+                <Spin size="large" />
+                <p className="mt-4 text-gray-600">
+                  <RobotOutlined className="mr-2" />
+                  AI is analyzing the document...
+                </p>
+                <p className="text-sm text-gray-500 mt-2">
+                  This may take a few moments
                 </p>
               </div>
-            </div>
+            </Card>
+          )}
 
-            {/* Actions */}
-            <div className="flex items-center justify-end gap-4 pt-4 border-t border-gray-200">
-              <button
-                type="button"
-                onClick={() => navigate(-1)}
-                className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-medium"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={!selectedFile || !formData.title}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
-              >
-                Upload Document
-              </button>
-            </div>
-          </form>
+          {aiAnalysis && (
+            <Card
+              title={
+                <Space>
+                  <RobotOutlined />
+                  <span>AI Analysis Results</span>
+                </Space>
+              }
+            >
+              <div className="space-y-4">
+                {/* Policy Violation Alert */}
+                {aiAnalysis.policyViolation?.hasViolation ? (
+                  <Alert
+                    message="Policy Violation Detected"
+                    description={
+                      <div>
+                        <p className="mb-2">
+                          <strong>Type:</strong>{" "}
+                          {aiAnalysis.policyViolation.violationType}
+                        </p>
+                        <p>
+                          <strong>Reason:</strong>{" "}
+                          {aiAnalysis.policyViolation.reason}
+                        </p>
+                      </div>
+                    }
+                    type="error"
+                    icon={<CloseCircleOutlined />}
+                    showIcon
+                  />
+                ) : (
+                  <Alert
+                    message="No Policy Violations"
+                    description="This document complies with community policies."
+                    type="success"
+                    icon={<CheckCircleOutlined />}
+                    showIcon
+                  />
+                )}
+
+                <Divider />
+
+                {/* AI Summary */}
+                <div>
+                  <h4 className="font-semibold mb-2 flex items-center">
+                    <FileTextOutlined className="mr-2" />
+                    Document Summary
+                  </h4>
+                  <p className="text-gray-700 bg-gray-50 p-3 rounded">
+                    {aiAnalysis.aiSummary || "No summary available"}
+                  </p>
+                </div>
+
+                {/* Topics */}
+                {aiAnalysis.topics && aiAnalysis.topics.length > 0 && (
+                  <div>
+                    <h4 className="font-semibold mb-2">Topics</h4>
+                    <Space wrap>
+                      {aiAnalysis.topics.map((topic, index) => (
+                        <Tag key={index} color="blue">
+                          {topic}
+                        </Tag>
+                      ))}
+                    </Space>
+                  </div>
+                )}
+
+                {/* Recommended Category */}
+                {aiAnalysis.recommendedCategory && (
+                  <div>
+                    <h4 className="font-semibold mb-2">Recommended Category</h4>
+                    <Tag color="green">{aiAnalysis.recommendedCategory}</Tag>
+                  </div>
+                )}
+
+                {/* Educational Status */}
+                <div>
+                  <h4 className="font-semibold mb-2">Educational Content</h4>
+                  <Tag color={aiAnalysis.isEducational ? "green" : "orange"}>
+                    {aiAnalysis.isEducational
+                      ? "Educational Content"
+                      : "Non-Educational"}
+                  </Tag>
+                </div>
+
+                {aiAnalysis.analyzedAt && (
+                  <p className="text-xs text-gray-500 mt-4">
+                    Analyzed at: {new Date(aiAnalysis.analyzedAt).toLocaleString()}
+                  </p>
+                )}
+              </div>
+            </Card>
+          )}
+
+          {!analyzing && !aiAnalysis && (
+            <Card>
+              <div className="text-center py-8 text-gray-400">
+                <RobotOutlined style={{ fontSize: 48 }} />
+                <p className="mt-4">
+                  AI analysis results will appear here after upload
+                </p>
+              </div>
+            </Card>
+          )}
         </div>
       </div>
     </div>
@@ -268,4 +331,3 @@ const UploadDocument = () => {
 };
 
 export default UploadDocument;
-
