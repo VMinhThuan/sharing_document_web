@@ -60,7 +60,7 @@ Respond in JSON format with the following structure:
           content: `Analyze this document:\n\n${truncatedText}`,
         },
       ],
-      model: "llama-3.1-70b-versatile", // or "mixtral-8x7b-32768" for faster responses
+      model: "llama-3.3-70b-versatile", // Updated from decommissioned model
       temperature: 0.3,
       max_tokens: 1000,
       response_format: { type: "json_object" },

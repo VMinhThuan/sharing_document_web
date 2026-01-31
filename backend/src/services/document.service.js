@@ -45,8 +45,13 @@ const updateDocument = async (id, data) => {
   return doc;
 };
 
+const getDocumentById = async (id) => {
+  return await Document.findById(id);
+};
+
 module.exports = {
   getDocuments,
+  getDocumentById,
   createDocument,
   updateDocument,
   approveDocument,

@@ -146,6 +146,7 @@ const Users = () => {
     {
       title: "User",
       dataIndex: "fullName",
+      width: 300,
       key: "user",
       render: (text, record) => (
         <div className="flex items-center gap-3">
@@ -257,90 +258,119 @@ const Users = () => {
               />
             </Tooltip>
           </Popconfirm>
+          {/* Delete functionality removed as per request */}
         </Space>
       ),
     },
   ];
 
   return (
-    <div className="lg:ml-64 p-4 md:p-6 lg:p-8 bg-gray-50 min-h-screen">
-      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-        <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-          <h1 className="text-2xl font-bold text-gray-800">User Management</h1>
-          <div className="flex gap-4 w-full md:w-auto items-center">
-            <Button
-              type="primary"
-              icon={<UserAddOutlined />}
-              onClick={handleAdd}
-            >
-              Add User
-            </Button>
-            <Input
-              placeholder="Search user..."
-              prefix={<SearchOutlined />}
-              onChange={(e) => setSearchText(e.target.value)}
-              className="max-w-xs"
-            />
+    <div className="p-4 md:p-6 lg:p-8 bg-gray-50 h-full overflow-hidden flex flex-col">
+      <div className="max-w-7xl mx-auto">
+        <div className="flex items-center gap-2 mb-6">
+          <div className="bg-gray-200 p-2 rounded-lg">
+            <UserAddOutlined />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-800 leading-none">
+              User Management
+            </h1>
+            <p className="text-gray-500 text-sm">
+              Manage system users and their roles
+            </p>
           </div>
         </div>
 
-        <Table
-          columns={columns}
-          dataSource={filteredData}
-          rowKey="_id"
-          loading={loading}
-          pagination={{ pageSize: 10 }}
-        />
-
-        <Modal
-          title={editingUser ? "Edit User" : "Add New User"}
-          open={isModalOpen}
-          onOk={handleModalOk}
-          onCancel={() => setIsModalOpen(false)}
-          confirmLoading={submitting}
-          className="user-modal"
-        >
-          <Form form={form} layout="vertical">
-            <Form.Item
-              name="fullName"
-              label="Full Name"
-              rules={[{ required: true }]}
-            >
-              <Input ref={nameInputRef} />
-            </Form.Item>
-            <Form.Item
-              name="email"
-              label="Email"
-              rules={[
-                { required: true, message: "Please input email!" },
-                { type: "email", message: "Invalid email!" },
-              ]}
-            >
-              <Input disabled={!!editingUser} />
-            </Form.Item>
-
-            {!editingUser && (
-              <Form.Item
-                name="password"
-                label="Password"
-                rules={[{ required: true, message: "Please input password!" }]}
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+            <h3 className="text-lg font-bold text-gray-800">
+              User List ({filteredData.length})
+            </h3>
+            <div className="flex gap-4 w-full md:w-auto items-center">
+              <Button
+                type="primary"
+                icon={<UserAddOutlined />}
+                onClick={handleAdd}
               >
-                <Input.Password />
+                Add User
+              </Button>
+              <Input
+                placeholder="Search user..."
+                prefix={<SearchOutlined />}
+                onChange={(e) => setSearchText(e.target.value)}
+                className="max-w-xs"
+              />
+            </div>
+          </div>
+
+          <Table
+            columns={columns}
+            dataSource={filteredData}
+            rowKey="_id"
+            loading={loading}
+            scroll={{ y: "calc(100vh - 400px)" }}
+            pagination={{
+              total: filteredData.length,
+              showTotal: (total, range) =>
+                `${range[0]}-${range[1]} of ${total} items`,
+              defaultPageSize: 10,
+              showSizeChanger: true,
+              pageSizeOptions: ["5", "10", "20", "50"],
+            }}
+          />
+
+          <Modal
+            title={editingUser ? "Edit User" : "Add New User"}
+            open={isModalOpen}
+            onOk={handleModalOk}
+            onCancel={() => setIsModalOpen(false)}
+            confirmLoading={submitting}
+            className="user-modal"
+          >
+            <Form form={form} layout="vertical">
+              <Form.Item
+                name="fullName"
+                label="Full Name"
+                rules={[{ required: true }]}
+              >
+                <Input ref={nameInputRef} />
               </Form.Item>
-            )}
+              <Form.Item
+                name="email"
+                label="Email"
+                rules={[
+                  { required: true, message: "Please input email!" },
+                  { type: "email", message: "Invalid email!" },
+                ]}
+              >
+                <Input disabled={!!editingUser} />
+              </Form.Item>
 
-            <Form.Item name="phoneNumber" label="Phone Number">
-              <Input />
-            </Form.Item>
+              {!editingUser && (
+                <Form.Item
+                  name="password"
+                  label="Password"
+                  rules={[
+                    { required: true, message: "Please input password!" },
+                  ]}
+                >
+                  <Input.Password />
+                </Form.Item>
+              )}
 
-            <Form.Item name="role" label="Role" rules={[{ required: true }]}>
-              <Select placeholder="Select a role">
-                <Option value="user">User</Option>
-                <Option value="admin">Admin</Option>
-              </Select>
-            </Form.Item>
-          </Form>
-        </Modal>
+              <Form.Item name="phoneNumber" label="Phone Number">
+                <Input />
+              </Form.Item>
+
+              <Form.Item name="role" label="Role" rules={[{ required: true }]}>
+                <Select placeholder="Select a role">
+                  <Option value="user">User</Option>
+                  <Option value="admin">Admin</Option>
+                </Select>
+              </Form.Item>
+            </Form>
+          </Modal>
+        </div>
       </div>
     </div>
   );

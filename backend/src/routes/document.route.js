@@ -25,6 +25,15 @@ router.get(
   authorize("admin", "user"),
   documentController.getDocuments,
 ); // Users might see public docs, admin sees all? logic needed later
+
+// Proxy route for viewing documents (bypassing CORS/Cloudinary headers)
+router.get(
+  "/view/:id",
+  protect,
+  authorize("admin", "user"),
+  documentController.viewDocument,
+);
+
 router.put(
   "/:id/approve",
   protect,

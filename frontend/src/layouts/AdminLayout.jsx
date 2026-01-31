@@ -1,6 +1,14 @@
 import { useState } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
-import { Layout, Menu, Avatar, Dropdown, Space, Typography, Button } from "antd";
+import {
+  Layout,
+  Menu,
+  Avatar,
+  Dropdown,
+  Space,
+  Typography,
+  Button,
+} from "antd";
 import {
   DashboardOutlined,
   BarChartOutlined,
@@ -11,6 +19,8 @@ import {
   LogoutOutlined,
   UserOutlined,
   HomeOutlined,
+  TeamOutlined,
+  TagsOutlined,
 } from "@ant-design/icons";
 import { useAuth } from "../contexts/AuthContext";
 import { Modal } from "antd";
@@ -40,14 +50,19 @@ const AdminLayout = () => {
 
   const menuItems = [
     {
-      key: "/admin",
+      key: "/admin/analytics",
       icon: <DashboardOutlined />,
       label: "Dashboard",
     },
     {
-      key: "/admin/analytics",
-      icon: <BarChartOutlined />,
-      label: "Analytics",
+      key: "/admin/users",
+      icon: <TeamOutlined />,
+      label: "Users Management",
+    },
+    {
+      key: "/admin/categories",
+      icon: <TagsOutlined />,
+      label: "Categories Management",
     },
     {
       key: "/admin/documents",
@@ -80,6 +95,7 @@ const AdminLayout = () => {
   return (
     <Layout style={{ minHeight: "100vh" }}>
       <Sider
+        theme="light"
         trigger={null}
         collapsible
         collapsed={collapsed}
@@ -92,7 +108,7 @@ const AdminLayout = () => {
           top: 0,
           bottom: 0,
         }}
-        className="shadow-lg"
+        className="shadow-lg border-r border-gray-200"
       >
         <div
           className="p-4 border-b border-gray-200"
@@ -124,7 +140,9 @@ const AdminLayout = () => {
           style={{ borderRight: 0 }}
         />
       </Sider>
-      <Layout style={{ marginLeft: collapsed ? 80 : 250, transition: "all 0.2s" }}>
+      <Layout
+        style={{ marginLeft: collapsed ? 80 : 250, transition: "all 0.2s" }}
+      >
         <Header
           style={{
             padding: "0 24px",
@@ -150,7 +168,7 @@ const AdminLayout = () => {
             arrow
           >
             <Space
-              style={{ cursor: "pointer", padding: "8px 12px" }}
+              style={{ cursor: "pointer", padding: "0 10px" }}
               className="hover:bg-gray-50 rounded-lg transition-colors"
             >
               <Avatar

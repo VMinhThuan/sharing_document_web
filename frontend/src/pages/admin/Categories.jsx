@@ -20,6 +20,7 @@ import {
   EditOutlined,
   PlusOutlined,
   SearchOutlined,
+  TagsOutlined,
 } from "@ant-design/icons";
 import { formatDateVN } from "../../utils/dateUtils";
 import "../../styles/documents.css"; // Reuse existing CSS for modal if needed, or create new one. Using documents.css for consistency in modal class reuse.
@@ -172,56 +173,82 @@ const Categories = () => {
   ];
 
   return (
-    <div className="lg:ml-64 p-4 md:p-6 lg:p-8 bg-gray-50 min-h-screen">
-      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-        <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-          <h1 className="text-2xl font-bold text-gray-800">
-            Category Management
-          </h1>
-          <div className="flex gap-4 w-full md:w-auto items-center">
-            <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
-              Add Category
-            </Button>
-            <Input
-              placeholder="Search category..."
-              prefix={<SearchOutlined />}
-              onChange={(e) => setSearchText(e.target.value)}
-              className="max-w-xs"
-            />
+    <div className="p-4 md:p-6 lg:p-8 bg-gray-50 h-full overflow-hidden flex flex-col">
+      <div className="max-w-7xl mx-auto">
+        <div className="flex items-center gap-2 mb-6">
+          <div className="bg-gray-200 p-2 rounded-lg">
+            <TagsOutlined />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-800 leading-none">
+              Category Management
+            </h1>
+            <p className="text-gray-500 text-sm">Manage document categories</p>
           </div>
         </div>
 
-        <Table
-          columns={columns}
-          dataSource={filteredData}
-          rowKey="_id"
-          loading={loading}
-          pagination={{ pageSize: 10 }}
-        />
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+            <h3 className="text-lg font-bold text-gray-800">
+              Category List ({filteredData.length})
+            </h3>
+            <div className="flex gap-4 w-full md:w-auto items-center">
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={handleAdd}
+              >
+                Add Category
+              </Button>
+              <Input
+                placeholder="Search category..."
+                prefix={<SearchOutlined />}
+                onChange={(e) => setSearchText(e.target.value)}
+                className="max-w-xs"
+              />
+            </div>
+          </div>
 
-        <Modal
-          title={editingCategory ? "Edit Category" : "Add New Category"}
-          open={isModalOpen}
-          onOk={handleModalOk}
-          onCancel={() => setIsModalOpen(false)}
-          confirmLoading={submitting}
-          className="document-modal"
-        >
-          <Form form={form} layout="vertical">
-            <Form.Item
-              name="name"
-              label="Name"
-              rules={[
-                { required: true, message: "Please enter category name" },
-              ]}
-            >
-              <Input />
-            </Form.Item>
-            <Form.Item name="description" label="Description">
-              <Input.TextArea rows={3} />
-            </Form.Item>
-          </Form>
-        </Modal>
+          <Table
+            columns={columns}
+            dataSource={filteredData}
+            rowKey="_id"
+            loading={loading}
+            scroll={{ y: "calc(100vh - 400px)" }}
+            pagination={{
+              total: filteredData.length,
+              showTotal: (total, range) =>
+                `${range[0]}-${range[1]} of ${total} items`,
+              defaultPageSize: 10,
+              showSizeChanger: true,
+              pageSizeOptions: ["5", "10", "20", "50"],
+            }}
+          />
+
+          <Modal
+            title={editingCategory ? "Edit Category" : "Add New Category"}
+            open={isModalOpen}
+            onOk={handleModalOk}
+            onCancel={() => setIsModalOpen(false)}
+            confirmLoading={submitting}
+            className="document-modal"
+          >
+            <Form form={form} layout="vertical">
+              <Form.Item
+                name="name"
+                label="Name"
+                rules={[
+                  { required: true, message: "Please enter category name" },
+                ]}
+              >
+                <Input />
+              </Form.Item>
+              <Form.Item name="description" label="Description">
+                <Input.TextArea rows={3} />
+              </Form.Item>
+            </Form>
+          </Modal>
+        </div>
       </div>
     </div>
   );

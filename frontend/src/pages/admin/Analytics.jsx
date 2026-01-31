@@ -1,12 +1,16 @@
 import { useEffect, useState } from "react";
-import { Card, Row, Col, Statistic, Spin, message } from "antd";
+import { Row, Col, Spin, message } from "antd";
 import {
   UserOutlined,
   FileTextOutlined,
   ArrowUpOutlined,
-  ArrowDownOutlined,
+  CloudUploadOutlined,
 } from "@ant-design/icons";
-import { getDashboardStatsApi, getDocumentsApi, getUsersApi } from "../../services/api";
+import {
+  getDashboardStatsApi,
+  getDocumentsApi,
+  getUsersApi,
+} from "../../services/api";
 
 const Analytics = () => {
   const [loading, setLoading] = useState(true);
@@ -34,7 +38,7 @@ const Analytics = () => {
 
       if (statsRes && statsRes.statusCode === 200) {
         const data = statsRes.data;
-        
+
         // Calculate monthly stats
         const now = new Date();
         const currentMonth = now.getMonth();
@@ -84,11 +88,14 @@ const Analytics = () => {
   const calculateMonthlyData = (items, monthsCount) => {
     const result = [];
     const now = new Date();
-    
+
     for (let i = monthsCount - 1; i >= 0; i--) {
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const monthName = date.toLocaleDateString("en-US", { month: "short", year: "numeric" });
-      
+      const monthName = date.toLocaleDateString("en-US", {
+        month: "short",
+        year: "numeric",
+      });
+
       const count = items.filter((item) => {
         const itemDate = new Date(item.createdAt);
         return (
@@ -96,10 +103,10 @@ const Analytics = () => {
           itemDate.getFullYear() === date.getFullYear()
         );
       }).length;
-      
+
       result.push({ month: monthName, count });
     }
-    
+
     return result;
   };
 
@@ -111,114 +118,153 @@ const Analytics = () => {
     );
   }
 
+  const statCards = [
+    {
+      label: "Total Users",
+      value: stats.totalUsers,
+      icon: <UserOutlined />,
+      color: "bg-blue-50 text-blue-700",
+      description: "Registered members",
+    },
+    {
+      label: "Total Documents",
+      value: stats.totalDocuments,
+      icon: <FileTextOutlined />,
+      color: "bg-green-50 text-green-700",
+      description: "Shared resources",
+    },
+    {
+      label: "New Users (This Month)",
+      value: stats.newUsersThisMonth,
+      icon: <ArrowUpOutlined />,
+      color: "bg-indigo-50 text-indigo-700",
+      description: "Growth rate",
+    },
+    {
+      label: "Uploads (This Month)",
+      value: stats.uploadsThisMonth,
+      icon: <CloudUploadOutlined />,
+      color: "bg-orange-50 text-orange-700",
+      description: "Recent activity",
+    },
+  ];
+
   return (
     <div>
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-800 mb-2">Analytics</h1>
-        <p className="text-gray-500">View statistics and trends</p>
+        <p className="text-gray-500">View real-time statistics and trends</p>
       </div>
 
       {/* Overview Stats */}
-      <Row gutter={[16, 16]} className="mb-6">
-        <Col xs={24} sm={12} lg={6}>
-          <Card>
-            <Statistic
-              title="Total Users"
-              value={stats.totalUsers}
-              prefix={<UserOutlined />}
-              valueStyle={{ color: "#3f8600" }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card>
-            <Statistic
-              title="Total Documents"
-              value={stats.totalDocuments}
-              prefix={<FileTextOutlined />}
-              valueStyle={{ color: "#1890ff" }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card>
-            <Statistic
-              title="New Users (This Month)"
-              value={stats.newUsersThisMonth}
-              prefix={<ArrowUpOutlined />}
-              valueStyle={{ color: "#cf1322" }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card>
-            <Statistic
-              title="Uploads (This Month)"
-              value={stats.uploadsThisMonth}
-              prefix={<ArrowUpOutlined />}
-              valueStyle={{ color: "#722ed1" }}
-            />
-          </Card>
-        </Col>
-      </Row>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
+        {statCards.map((stat, index) => (
+          <div
+            key={index}
+            className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div
+                className={`w-12 h-12 rounded-lg flex items-center justify-center text-xl ${stat.color}`}
+              >
+                {stat.icon}
+              </div>
+              <span
+                className={`text-sm font-medium ${stats.totalUsers > 0 ? "text-green-600" : "text-gray-400"}`}
+              >
+                {/* Placeholder for trending info if available */}
+              </span>
+            </div>
+            <div>
+              <h3 className="text-gray-500 text-sm font-medium">
+                {stat.label}
+              </h3>
+              <p className="text-2xl font-bold text-gray-900 mt-1">
+                {stat.value}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
 
       {/* Monthly Charts */}
-      <Row gutter={[16, 16]}>
+      <Row gutter={[24, 24]}>
         <Col xs={24} lg={12}>
-          <Card title="New Users Per Month" className="h-full">
-            <div className="space-y-3">
+          <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm h-full">
+            <h3 className="text-lg font-bold text-gray-800 mb-6 border-b pb-4">
+              New Users Growth
+            </h3>
+            <div className="space-y-6">
               {stats.monthlyUsers.map((item, index) => (
-                <div key={index}>
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-sm text-gray-600">{item.month}</span>
-                    <span className="text-sm font-semibold">{item.count}</span>
+                <div key={index} className="relative pt-1">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-sm font-semibold text-gray-600">
+                      {item.month}
+                    </div>
+                    <div className="text-sm font-bold text-blue-600">
+                      {item.count}
+                    </div>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-blue-50">
                     <div
-                      className="bg-blue-500 h-2 rounded-full transition-all"
                       style={{
                         width: `${
                           stats.monthlyUsers.length > 0
                             ? (item.count /
-                                Math.max(...stats.monthlyUsers.map((m) => m.count), 1)) *
+                                Math.max(
+                                  ...stats.monthlyUsers.map((m) => m.count),
+                                  1,
+                                )) *
                               100
                             : 0
                         }%`,
                       }}
-                    />
+                      className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-blue-500 transition-all duration-500"
+                    ></div>
                   </div>
                 </div>
               ))}
             </div>
-          </Card>
+          </div>
         </Col>
+
         <Col xs={24} lg={12}>
-          <Card title="Document Uploads Per Month" className="h-full">
-            <div className="space-y-3">
+          <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm h-full">
+            <h3 className="text-lg font-bold text-gray-800 mb-6 border-b pb-4">
+              Document Upload Trends
+            </h3>
+            <div className="space-y-6">
               {stats.monthlyUploads.map((item, index) => (
-                <div key={index}>
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-sm text-gray-600">{item.month}</span>
-                    <span className="text-sm font-semibold">{item.count}</span>
+                <div key={index} className="relative pt-1">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-sm font-semibold text-gray-600">
+                      {item.month}
+                    </div>
+                    <div className="text-sm font-bold text-green-600">
+                      {item.count}
+                    </div>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-green-50">
                     <div
-                      className="bg-green-500 h-2 rounded-full transition-all"
                       style={{
                         width: `${
                           stats.monthlyUploads.length > 0
                             ? (item.count /
-                                Math.max(...stats.monthlyUploads.map((m) => m.count), 1)) *
+                                Math.max(
+                                  ...stats.monthlyUploads.map((m) => m.count),
+                                  1,
+                                )) *
                               100
                             : 0
                         }%`,
                       }}
-                    />
+                      className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-green-500 transition-all duration-500"
+                    ></div>
                   </div>
                 </div>
               ))}
             </div>
-          </Card>
+          </div>
         </Col>
       </Row>
     </div>

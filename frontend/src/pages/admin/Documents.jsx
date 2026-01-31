@@ -48,6 +48,70 @@ import { formatDateVN, isToday } from "../../utils/dateUtils";
 
 const { Option } = Select;
 
+// Helper component to view PDF by fetching as blob (bypassing headers)
+// Helper component to view PDF by fetching as blob (bypassing headers)
+const PdfViewer = ({ docId }) => {
+  const [blobUrl, setBlobUrl] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    const fetchPdf = async () => {
+      try {
+        setLoading(true);
+        setError(false);
+        const token = localStorage.getItem("accessToken");
+        const response = await fetch(
+          `${import.meta.env.VITE_BACKEND_URL}/api/v1/documents/view/${docId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
+
+        if (!response.ok) throw new Error("Failed to fetch");
+        const blob = await response.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        setBlobUrl(objectUrl);
+      } catch (err) {
+        console.error("PDF Fetch Error:", err);
+        setError(true);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (docId) fetchPdf();
+
+    return () => {
+      if (blobUrl) URL.revokeObjectURL(blobUrl);
+    };
+  }, [docId]);
+
+  if (loading)
+    return (
+      <div className="flex justify-center items-center h-full">
+        Loading PDF...
+      </div>
+    );
+
+  if (error || !blobUrl)
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-4 text-gray-500">
+        <p>Unable to load PDF preview.</p>
+      </div>
+    );
+
+  return (
+    <iframe
+      src={blobUrl}
+      className="w-full h-full border-none rounded-b-lg"
+      title="PDF Viewer"
+    />
+  );
+};
+
 const Documents = () => {
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -62,6 +126,10 @@ const Documents = () => {
   const [editingDoc, setEditingDoc] = useState(null);
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
+
+  // View Modal State
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [viewingDoc, setViewingDoc] = useState(null);
 
   // Auto focus ref
   const titleInputRef = useRef(null);
@@ -105,6 +173,12 @@ const Documents = () => {
       }, 100);
     }
   }, [isModalOpen]);
+
+  // View Document Logic
+  const handleViewDocument = (doc) => {
+    setViewingDoc(doc);
+    setViewModalOpen(true);
+  };
 
   const handleApprove = async (id) => {
     try {
@@ -329,13 +403,7 @@ const Documents = () => {
                 >
                   Reject
                 </Button>,
-                <Button
-                  type="text"
-                  icon={<EyeOutlined />}
-                  onClick={() => window.open(item.fileUrl, "_blank")}
-                >
-                  View
-                </Button>,
+                <Button onClick={() => handleViewDocument(item)}>View</Button>,
               ]}
             >
               <List.Item.Meta
@@ -437,14 +505,7 @@ const Documents = () => {
         key: "action",
         render: (_, record) => (
           <Space size="small">
-            <Button
-              type="text"
-              size="small"
-              icon={<EyeOutlined className="text-blue-600" />}
-              onClick={() => window.open(record.fileUrl, "_blank")}
-            >
-              View
-            </Button>
+            <Button onClick={() => handleViewDocument(record)}>View</Button>
             <Button
               type="primary"
               icon={<EditOutlined />}
@@ -541,7 +602,7 @@ const Documents = () => {
   ];
 
   return (
-    <div className="lg:ml-64 p-4 md:p-6 lg:p-8 bg-gray-50 min-h-screen">
+    <div className="p-4 md:p-6 lg:p-8 bg-gray-50 min-h-screen">
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center gap-2 mb-6">
           <div className="bg-gray-200 p-2 rounded-lg">
@@ -628,6 +689,94 @@ const Documents = () => {
               </Form.Item>
             )}
           </Form>
+        </Modal>
+        <Modal
+          title={viewingDoc?.title || "View Document"}
+          open={viewModalOpen}
+          onCancel={() => {
+            setViewModalOpen(false);
+            setViewingDoc(null);
+          }}
+          footer={[
+            <Button
+              key="close"
+              onClick={() => {
+                setViewModalOpen(false);
+                setViewingDoc(null);
+              }}
+            >
+              Close
+            </Button>,
+            <Button
+              key="download"
+              type="primary"
+              icon={<UploadOutlined className="rotate-180" />}
+              onClick={() => window.open(viewingDoc?.fileUrl, "_blank")}
+            >
+              Download
+            </Button>,
+          ]}
+          width={1000}
+          centered
+          className="view-document-modal"
+          styles={{ body: { height: "80vh", padding: 0 } }}
+        >
+          {viewingDoc && (
+            <div className="w-full h-full bg-gray-100 flex items-center justify-center overflow-hidden rounded-b-lg">
+              {(() => {
+                const doc = viewingDoc;
+                const isOffice =
+                  doc.fileType?.includes("word") ||
+                  doc.fileType?.includes("presentation") ||
+                  doc.fileType?.includes("spreadsheet") ||
+                  doc.fileType?.includes("msword") ||
+                  doc.fileType?.includes("officedocument");
+
+                const isPdf =
+                  doc.fileType?.includes("pdf") ||
+                  doc.fileUrl?.endsWith(".pdf");
+                const isImage =
+                  doc.fileType?.includes("image") ||
+                  doc.fileUrl?.match(/\.(jpeg|jpg|gif|png|webp|bmp)$/i);
+
+                if (isOffice) {
+                  return (
+                    <iframe
+                      src={`https://docs.google.com/viewer?url=${encodeURIComponent(
+                        doc.fileUrl,
+                      )}&embedded=true`}
+                      className="w-full h-full border-none"
+                      title="Document Viewer"
+                    />
+                  );
+                } else if (isPdf) {
+                  return <PdfViewer docId={doc._id} />;
+                } else if (isImage) {
+                  return (
+                    <img
+                      src={doc.fileUrl}
+                      alt="Document"
+                      className="max-w-full max-h-full object-contain"
+                    />
+                  );
+                } else {
+                  return (
+                    <div className="text-center p-10">
+                      <p className="mb-4 text-gray-500">
+                        Preview not available for this file type.
+                      </p>
+                      <Button
+                        type="primary"
+                        onClick={() => window.open(doc.fileUrl, "_blank")}
+                      >
+                        Download to View
+                      </Button>
+                    </div>
+                  );
+                }
+              })()}
+            </div>
+          )}
         </Modal>
       </div>
     </div>

@@ -2,6 +2,7 @@ const documentService = require("../services/document.service");
 const aiService = require("../services/ai.service");
 const documentParserService = require("../services/documentParser.service");
 const { successResponse, errorResponse } = require("../utils/response");
+const axios = require("axios");
 
 const getDocuments = async (req, res) => {
   try {
@@ -51,6 +52,7 @@ const createDocument = async (req, res) => {
 
     if (req.file) {
       // Old way: file uploaded in this request
+      console.log("File Uploaded to Cloudinary:", req.file); // DEBUG LOG
       docFileUrl = req.file.path;
       docFileType = req.file.mimetype.split("/")[1] || "unknown";
       docSize = req.file.size;
@@ -81,18 +83,18 @@ const createDocument = async (req, res) => {
     let aiAnalysisResult = null;
     try {
       console.log("Starting AI analysis for document...");
-      
+
       // Extract text from document
       const extractedText = await documentParserService.extractTextFromDocument(
         docFileUrl,
-        docFileType
+        docFileType,
       );
-      
+
       // If we have meaningful text, analyze it with AI
       if (extractedText && extractedText.length > 50) {
         console.log("Extracted text length:", extractedText.length);
         const analysis = await aiService.analyzeDocument(extractedText);
-        
+
         if (analysis.success) {
           aiAnalysisResult = {
             aiSummary: analysis.data.aiSummary,
@@ -102,16 +104,19 @@ const createDocument = async (req, res) => {
             recommendedCategory: analysis.data.recommendedCategory,
             analyzedAt: new Date(),
           };
-          
+
           // Auto-update category if recommended
           if (analysis.data.recommendedCategory && !category) {
             docData.category = analysis.data.recommendedCategory;
           }
-          
+
           // Auto-reject if policy violation detected
           if (analysis.data.policyViolation.hasViolation) {
             docData.status = "rejected";
-            console.log("Document rejected due to policy violation:", analysis.data.policyViolation);
+            console.log(
+              "Document rejected due to policy violation:",
+              analysis.data.policyViolation,
+            );
           }
         } else {
           console.error("AI analysis failed:", analysis.error);
@@ -158,6 +163,66 @@ const updateDocument = async (req, res) => {
   }
 };
 
+const { cloudinary } = require("../configs/cloudinary"); // Import cloudinary
+
+// ... other functions ...
+
+const viewDocument = async (req, res) => {
+  try {
+    const doc = await documentService.getDocumentById(req.params.id);
+    if (!doc) {
+      return errorResponse(res, 404, "Document not found");
+    }
+
+    // SIMPLIFIED LOGIC:
+    // Since we now upload files with type="authenticated", Cloudinary returns a fully signed, securely accessible URL
+    // as the 'path' property during upload. We saved this to the DB.
+    // So `doc.fileUrl` is ALREADY a valid, signed, authenticated URL.
+
+    // We just need to fetch it directly.
+    // SIMPLIFIED PROXY LOGIC:
+    // We upload files as 'image'/'auto' (public), so the URL should be accessible directly.
+    // We proxy it to avoid CORS issues and handle Content-Disposition correctly.
+
+    // We use the fileUrl directly from the DB.
+    // IMAGE PREVIEW STRATEGY:
+    // We fetch the PDF as a JPG thumbnail (page 1) to bypass potential PDF blocking/download behavior.
+
+    let previewUrl = doc.fileUrl;
+    if (previewUrl.endsWith(".pdf")) {
+      previewUrl = previewUrl.replace(".pdf", ".jpg");
+    }
+
+    try {
+      const response = await axios({
+        url: previewUrl,
+        method: "GET",
+        responseType: "stream",
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.0.0 Safari/537.36",
+        },
+      });
+
+      // It will be image/jpeg
+      const contentType = response.headers["content-type"];
+      res.setHeader("Content-Type", contentType || "image/jpeg");
+      res.setHeader("Content-Disposition", "inline");
+      response.data.pipe(res);
+    } catch (axiosError) {
+      console.error("View Document Error Status:", axiosError.response?.status);
+      return errorResponse(res, 500, "Could not load document preview");
+    }
+  } catch (error) {
+    console.error(
+      "View Document Error:",
+      error.response?.status,
+      error.message,
+    );
+    errorResponse(res, 500, "Could not load document", error.message);
+  }
+};
+
 module.exports = {
   getDocuments,
   createDocument,
@@ -165,4 +230,5 @@ module.exports = {
   approveDocument,
   rejectDocument,
   deleteDocument,
+  viewDocument,
 };

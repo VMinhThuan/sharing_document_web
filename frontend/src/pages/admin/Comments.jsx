@@ -65,7 +65,7 @@ const Comments = () => {
   );
 
   return (
-    <div className="lg:ml-64 p-4 md:p-6 lg:p-8 bg-gray-50 min-h-screen">
+    <div className="p-4 md:p-6 lg:p-8 bg-gray-50 min-h-screen">
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center gap-2 mb-6">
           <div className="bg-gray-200 p-2 rounded-lg">

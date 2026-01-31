@@ -1,14 +1,14 @@
-const express = require("express");
 const dotenv = require("dotenv");
+// Load env vars
+dotenv.config();
+
+const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
 const connectDB = require("./configs/database");
 const routes = require("./routes/index");
 const { errorHandler } = require("./middlewares/error.middleware");
-
-// Load env vars
-dotenv.config();
 
 // Connect to database
 // Connect to database
