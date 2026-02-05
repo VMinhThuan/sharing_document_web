@@ -54,6 +54,7 @@ const registerUser = async (userData) => {
       fullName: user.fullName,
       email: user.email,
       role: user.role,
+      avatar: user.avatar,
       token: generateToken(user._id),
     };
   } else {
@@ -92,6 +93,7 @@ const loginUser = async (email, password) => {
     fullName: user.fullName,
     email: user.email,
     role: user.role,
+    avatar: user.avatar,
     token: generateToken(user._id),
   };
 };
@@ -165,6 +167,7 @@ const resetPassword = async (resetToken, password) => {
     fullName: user.fullName,
     email: user.email,
     role: user.role,
+    avatar: user.avatar,
     token: generateToken(user._id),
   };
 };
@@ -191,6 +194,7 @@ const changePassword = async (userId, currentPassword, newPassword) => {
     fullName: user.fullName,
     email: user.email,
     role: user.role,
+    avatar: user.avatar,
     token: generateToken(user._id),
   };
 };

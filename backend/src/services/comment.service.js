@@ -14,17 +14,28 @@ const getCommentsByDocument = async (documentId) => {
     .sort({ createdAt: -1 });
 };
 
-const createComment = async (userId, documentId, content) => {
+const createComment = async (
+  userId,
+  documentId,
+  content,
+  parentCommentId = null,
+) => {
   const document = await Document.findById(documentId);
   if (!document) {
     throw new Error("Document not found");
   }
 
-  const comment = await Comment.create({
+  const commentData = {
     content,
     user: userId,
     document: documentId,
-  });
+  };
+
+  if (parentCommentId) {
+    commentData.parentComment = parentCommentId;
+  }
+
+  const comment = await Comment.create(commentData);
 
   return await comment.populate("user", "fullName email avatar");
 };

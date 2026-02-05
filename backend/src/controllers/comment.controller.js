@@ -22,11 +22,12 @@ const getDocumentComments = async (req, res) => {
 
 const createComment = async (req, res) => {
   try {
-    const { documentId, content } = req.body;
+    const { documentId, content, parentCommentId } = req.body;
     const comment = await commentService.createComment(
       req.user._id,
       documentId,
       content,
+      parentCommentId,
     );
     successResponse(res, 201, "Comment created", comment);
   } catch (error) {

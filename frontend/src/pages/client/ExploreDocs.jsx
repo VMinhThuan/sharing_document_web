@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { getDocumentsApi } from "../../services/api";
+import { getDocumentsApi, toggleFavoriteApi } from "../../services/api";
+import { useAuth } from "../../contexts/AuthContext";
 import { Spin, Empty, message } from "antd";
 import { formatDateVN } from "../../utils/dateUtils";
 
@@ -16,8 +17,31 @@ const formatFileType = (type) => {
 };
 
 const ExploreDocs = () => {
+  const { user, refreshUser, isAuthenticated } = useAuth();
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const handleToggleFavorite = async (e, docId) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isAuthenticated) {
+      message.warning("Please login to favorite documents");
+      return;
+    }
+    try {
+      const res = await toggleFavoriteApi(docId);
+      if (res && res.statusCode === 200) {
+        refreshUser(true);
+        const isFavorited = user?.favorites?.includes(docId);
+        message.success(
+          isFavorited ? "Removed from favorites" : "Added to favorites",
+        );
+      }
+    } catch (error) {
+      console.error("Failed to toggle favorite:", error);
+      message.error("Failed to update favorite");
+    }
+  };
 
   useEffect(() => {
     const fetchDocuments = async () => {
@@ -39,7 +63,7 @@ const ExploreDocs = () => {
   }, []);
 
   return (
-    <main className="flex-1 flex flex-col h-full bg-background-light dark:bg-background-dark overflow-hidden">
+    <main className="flex-1 flex flex-col min-h-full bg-background-light dark:bg-background-dark">
       <header className="px-8 py-10 bg-white dark:bg-[#1a202c] border-b border-gray-200 dark:border-gray-800 shadow-sm">
         <div className="max-w-7xl mx-auto">
           <h1 className="text-3xl font-extrabold text-[#111318] dark:text-white mb-2">
@@ -51,7 +75,7 @@ const ExploreDocs = () => {
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto p-8 lg:p-12 no-scrollbar">
+      <div className="p-8 lg:p-12">
         <div className="max-w-7xl mx-auto">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20">
@@ -103,7 +127,17 @@ const ExploreDocs = () => {
                           ? doc.category?.name
                           : "General"}
                       </span>
-                      <span className="material-symbols-outlined text-gray-300 group-hover:text-red-400 transition-colors text-xl">
+                      <span
+                        className={`material-symbols-outlined transition-colors cursor-pointer text-xl ${
+                          user?.favorites?.includes(doc._id)
+                            ? "text-red-500"
+                            : "text-gray-300 group-hover:text-red-400"
+                        }`}
+                        style={{
+                          fontVariationSettings: `'FILL' ${user?.favorites?.includes(doc._id) ? 1 : 0}`,
+                        }}
+                        onClick={(e) => handleToggleFavorite(e, doc._id)}
+                      >
                         favorite
                       </span>
                     </div>

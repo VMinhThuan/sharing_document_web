@@ -97,7 +97,7 @@ const Library = () => {
   );
 
   return (
-    <main className="flex-1 overflow-y-auto bg-background-light dark:bg-background-dark p-8">
+    <main className="flex-1 min-h-full bg-background-light dark:bg-background-dark p-8">
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">

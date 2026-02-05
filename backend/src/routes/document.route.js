@@ -19,6 +19,18 @@ router.get(
   documentController.getMyDocuments,
 );
 router.get(
+  "/favorites",
+  protect,
+  authorize("admin", "user"),
+  documentController.getFavorites,
+);
+router.post(
+  "/favorites/:id",
+  protect,
+  authorize("admin", "user"),
+  documentController.toggleFavorite,
+);
+router.get(
   "/:id",
   protect,
   authorize("admin", "user"),

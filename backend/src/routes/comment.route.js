@@ -8,11 +8,7 @@ router.get("/", protect, authorize("admin"), commentController.getComments);
 
 // Authenticated users:
 router.post("/", protect, commentController.createComment);
-router.get(
-  "/document/:documentId",
-  protect,
-  commentController.getDocumentComments,
-);
+router.get("/document/:documentId", commentController.getDocumentComments);
 router.delete("/:id", protect, commentController.deleteComment);
 router.put("/:id", protect, commentController.updateComment);
 

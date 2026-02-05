@@ -1,14 +1,36 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { getDocumentByIdApi } from "../../services/api";
+import { getDocumentByIdApi, toggleFavoriteApi } from "../../services/api";
+import { useAuth } from "../../contexts/AuthContext";
 import { Spin, Empty, message } from "antd";
 import { formatDateVN } from "../../utils/dateUtils";
 
 const LibraryDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user, refreshUser, isAuthenticated } = useAuth();
   const [document, setDocument] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const handleToggleFavorite = async () => {
+    if (!isAuthenticated) {
+      message.warning("Please login to favorite documents");
+      return;
+    }
+    try {
+      const res = await toggleFavoriteApi(id);
+      if (res && res.statusCode === 200) {
+        refreshUser(true);
+        const isFavorited = user?.favorites?.includes(id);
+        message.success(
+          isFavorited ? "Removed from favorites" : "Added to favorites",
+        );
+      }
+    } catch (error) {
+      console.error("Failed to toggle favorite:", error);
+      message.error("Failed to update favorite");
+    }
+  };
   const [zoom, setZoom] = useState(100);
 
   useEffect(() => {
@@ -101,6 +123,28 @@ const LibraryDetail = () => {
                 </div>
               </div>
               <div className="flex items-center gap-3 mb-1">
+                <button
+                  onClick={handleToggleFavorite}
+                  className={`p-2 rounded-lg border transition-all flex items-center justify-center ${
+                    user?.favorites?.includes(id)
+                      ? "border-red-200 bg-red-50 text-red-500"
+                      : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700"
+                  }`}
+                  title={
+                    user?.favorites?.includes(id)
+                      ? "Remove from favorites"
+                      : "Add to favorites"
+                  }
+                >
+                  <span
+                    className="material-symbols-outlined text-[20px]"
+                    style={{
+                      fontVariationSettings: `'FILL' ${user?.favorites?.includes(id) ? 1 : 0}`,
+                    }}
+                  >
+                    favorite
+                  </span>
+                </button>
                 <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 text-sm font-bold transition-all border border-slate-200 dark:border-slate-700 shadow-sm">
                   <span className="material-symbols-outlined text-[20px]">
                     share

@@ -63,6 +63,33 @@ const toggleUserStatus = async (id) => {
   return { _id: user._id, isActive: user.isActive };
 };
 
+const toggleFavorite = async (userId, documentId) => {
+  const user = await User.findById(userId);
+  if (!user) throw new Error("User not found");
+
+  const index = user.favorites.indexOf(documentId);
+  if (index === -1) {
+    user.favorites.push(documentId);
+  } else {
+    user.favorites.splice(index, 1);
+  }
+
+  await user.save();
+  return user.favorites;
+};
+
+const getFavorites = async (userId) => {
+  const user = await User.findById(userId).populate({
+    path: "favorites",
+    populate: {
+      path: "uploadedBy",
+      select: "fullName avatar",
+    },
+  });
+  if (!user) throw new Error("User not found");
+  return user.favorites;
+};
+
 module.exports = {
   getAllUsers,
   getUserById,
@@ -70,4 +97,6 @@ module.exports = {
   updateUser,
   deleteUser,
   toggleUserStatus,
+  toggleFavorite,
+  getFavorites,
 };

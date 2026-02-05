@@ -284,15 +284,6 @@ const Uploads = () => {
               className="rounded-lg h-10"
             />
           </div>
-          <Button
-            icon={<CloudUploadOutlined />}
-            type="primary"
-            size="large"
-            onClick={handleAdd}
-            className="rounded-lg flex items-center"
-          >
-            Upload
-          </Button>
         </div>
       </header>
 

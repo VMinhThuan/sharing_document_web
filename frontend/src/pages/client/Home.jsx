@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
-import { getDocumentsApi } from "../../services/api";
-import { Spin } from "antd";
+import { getDocumentsApi, toggleFavoriteApi } from "../../services/api";
+import { Spin, message } from "antd";
 
 const formatFileType = (type) => {
   if (!type) return "FILE";
@@ -16,9 +16,31 @@ const formatFileType = (type) => {
 };
 
 const Home = () => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, refreshUser } = useAuth();
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const handleToggleFavorite = async (e, docId) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isAuthenticated) {
+      message.warning("Please login to favorite documents");
+      return;
+    }
+    try {
+      const res = await toggleFavoriteApi(docId);
+      if (res && res.statusCode === 200) {
+        refreshUser(true);
+        const isFavorited = user?.favorites?.includes(docId);
+        message.success(
+          isFavorited ? "Removed from favorites" : "Added to favorites",
+        );
+      }
+    } catch (error) {
+      console.error("Failed to toggle favorite:", error);
+      message.error("Failed to update favorite");
+    }
+  };
 
   useEffect(() => {
     const fetchHomeData = async () => {
@@ -48,7 +70,7 @@ const Home = () => {
   };
 
   return (
-    <main className="flex-1 flex flex-col h-full relative overflow-hidden">
+    <main className="flex-1 flex flex-col min-h-full relative">
       {/* Mobile Header (Visible only on small screens) */}
       <div className="lg:hidden flex items-center justify-between p-4 bg-white dark:bg-[#1a202c] border-b border-gray-200 dark:border-gray-800 z-20">
         <div className="flex items-center gap-2">
@@ -62,7 +84,7 @@ const Home = () => {
         </button>
       </div>
       {/* Scrollable Content Area */}
-      <div className="flex-1 overflow-y-auto bg-background-light dark:bg-background-dark scroll-smooth no-scrollbar">
+      <div className="bg-background-light dark:bg-background-dark">
         <div className="max-w-7xl mx-auto w-full pb-10">
           {/* Hero / Greeting Section */}
           {user && isAuthenticated && (
@@ -171,7 +193,17 @@ const Home = () => {
                             <h3 className="font-bold text-lg text-gray-900 dark:text-white group-hover:text-primary transition-colors line-clamp-1">
                               {doc.title}
                             </h3>
-                            <span className="material-symbols-outlined text-gray-400 hover:text-red-500 transition-colors cursor-pointer">
+                            <span
+                              className={`material-symbols-outlined transition-colors cursor-pointer ${
+                                user?.favorites?.includes(doc._id)
+                                  ? "text-red-500"
+                                  : "text-gray-400 hover:text-red-500"
+                              }`}
+                              style={{
+                                fontVariationSettings: `'FILL' ${user?.favorites?.includes(doc._id) ? 1 : 0}`,
+                              }}
+                              onClick={(e) => handleToggleFavorite(e, doc._id)}
+                            >
                               favorite
                             </span>
                           </div>

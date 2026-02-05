@@ -63,6 +63,12 @@ const userSchema = new mongoose.Schema({
       ref: "Category",
     },
   ],
+  favorites: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Document",
+    },
+  ],
   createdAt: {
     type: Date,
     default: Date.now,

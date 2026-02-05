@@ -17,8 +17,8 @@ export const AuthProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
-  const fetchUser = async () => {
-    setIsLoading(true);
+  const fetchUser = async (quiet = false) => {
+    if (!quiet) setIsLoading(true);
     try {
       const token = localStorage.getItem("accessToken");
       if (token) {

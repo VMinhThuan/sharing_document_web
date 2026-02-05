@@ -191,13 +191,14 @@ const ClientSidebar = () => {
             >
               <div className="flex items-center justify-between gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors group">
                 <div className="flex items-center gap-3 overflow-hidden">
-                  <div
-                    className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 ring-2 ring-gray-100 dark:ring-gray-700 shrink-0"
-                    data-alt="User Avatar"
-                    style={{
-                      backgroundImage: `url("${user.avatar || "https://lh3.googleusercontent.com/aida-public/AB6AXuAyywXwl8gB4T9Bg9qX9-leZ11D89IRurmjopEmaVLe8fb1_-XmfW1qUAPN3KTlfYeZLGrh9uOinAWO3tx9Cng6KTAzRaGPZO6ssq3XLlkWshY4TdFL5sT7304FdXjnyxvK-TQaIRgl4mIXVSqVdP7URgiFAnEZwYQsjE2ChCLfk5RkWy9766mMFa_vVjnxX4UQP02KzTlFdpcxCUh_GQw3qsS1e_soqV_xAd8Us7trwMTUApJxzEI99yqJ4z0-NIcLKFutPvmtQkg"}")`,
-                    }}
-                  ></div>
+                  <img
+                    src={
+                      user.avatar ||
+                      "https://lh3.googleusercontent.com/aida-public/AB6AXuAyywXwl8gB4T9Bg9qX9-leZ11D89IRurmjopEmaVLe8fb1_-XmfW1qUAPN3KTlfYeZLGrh9uOinAWO3tx9Cng6KTAzRaGPZO6ssq3XLlkWshY4TdFL5sT7304FdXjnyxvK-TQaIRgl4mIXVSqVdP7URgiFAnEZwYQsjE2ChCLfk5RkWy9766mMFa_vVjnxX4UQP02KzTlFdpcxCUh_GQw3qsS1e_soqV_xAd8Us7trwMTUApJxzEI99yqJ4z0-NIcLKFutPvmtQkg"
+                    }
+                    alt="User Avatar"
+                    className="object-cover rounded-full size-10 ring-2 ring-gray-100 dark:ring-gray-700 shrink-0"
+                  />
                   <div className="flex flex-col overflow-hidden">
                     <p className="text-sm font-bold truncate dark:text-white">
                       {user.fullName || "User"}

@@ -81,6 +81,14 @@ export const getMyDocumentsApi = () => {
   return axios.get("/api/v1/documents/me");
 };
 
+export const toggleFavoriteApi = (id) => {
+  return axios.post(`/api/v1/documents/favorites/${id}`);
+};
+
+export const getFavoritesApi = () => {
+  return axios.get("/api/v1/documents/favorites");
+};
+
 export const getDocumentByIdApi = (id) => {
   return axios.get(`/api/v1/documents/${id}`);
 };
@@ -126,9 +134,25 @@ export const deleteCategoryApi = (id) => {
   return axios.delete(`/api/v1/categories/${id}`);
 };
 
-// --- Comments (Admin) ---
+// --- Comments ---
 export const getCommentsApi = () => {
   return axios.get("/api/v1/comments");
+};
+
+export const getDocumentCommentsApi = (documentId) => {
+  return axios.get(`/api/v1/comments/document/${documentId}`);
+};
+
+export const createCommentApi = (
+  documentId,
+  content,
+  parentCommentId = null,
+) => {
+  return axios.post("/api/v1/comments", {
+    documentId,
+    content,
+    parentCommentId,
+  });
 };
 
 export const deleteCommentApi = (id) => {

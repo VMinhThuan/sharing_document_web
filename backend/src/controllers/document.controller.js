@@ -1,4 +1,5 @@
 const documentService = require("../services/document.service");
+const userService = require("../services/user.service");
 const aiService = require("../services/ai.service");
 const documentParserService = require("../services/documentParser.service");
 const { successResponse, errorResponse } = require("../utils/response");
@@ -18,6 +19,25 @@ const getMyDocuments = async (req, res) => {
   try {
     const docs = await documentService.getUserDocuments(req.user._id);
     successResponse(res, 200, "Your documents retrieved", docs);
+  } catch (error) {
+    errorResponse(res, 500, "Server Error", error.message);
+  }
+};
+
+const toggleFavorite = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const favorites = await userService.toggleFavorite(req.user._id, id);
+    successResponse(res, 200, "Favorite toggled", favorites);
+  } catch (error) {
+    errorResponse(res, 500, "Server Error", error.message);
+  }
+};
+
+const getFavorites = async (req, res) => {
+  try {
+    const docs = await userService.getFavorites(req.user._id);
+    successResponse(res, 200, "Favorite documents retrieved", docs);
   } catch (error) {
     errorResponse(res, 500, "Server Error", error.message);
   }
@@ -246,4 +266,6 @@ module.exports = {
   deleteDocument,
   viewDocument,
   getMyDocuments,
+  toggleFavorite,
+  getFavorites,
 };
