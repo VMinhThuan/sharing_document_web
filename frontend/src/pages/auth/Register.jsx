@@ -1,16 +1,20 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { registerApi } from "../../services/api";
-import { message, Form, Input, Button } from "antd";
+import { registerApi, getCategoriesApi } from "../../services/api";
+import { message, Form, Input, Button, Select, Divider } from "antd";
 import {
   UserOutlined,
   LockOutlined,
   MailOutlined,
   PhoneOutlined,
+  StarOutlined,
 } from "@ant-design/icons";
+
+const { Option } = Select;
 
 const Register = () => {
   const [loading, setLoading] = useState(false);
+  const [categories, setCategories] = useState([]);
   const navigate = useNavigate();
   const fullNameRef = useRef(null);
 
@@ -30,7 +34,19 @@ const Register = () => {
     if (fullNameRef.current) {
       fullNameRef.current.focus();
     }
+    fetchCategories();
   }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const res = await getCategoriesApi();
+      if (res && res.statusCode === 200) {
+        setCategories(res.data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch categories:", error);
+    }
+  };
 
   const onFinish = async (values) => {
     setLoading(true);
@@ -40,6 +56,7 @@ const Register = () => {
         values.password,
         values.fullName,
         values.phoneNumber,
+        values.interests,
       );
 
       if (res && res.statusCode === 201) {
@@ -151,6 +168,39 @@ const Register = () => {
             </Form.Item>
 
             <Form.Item
+              name="interests"
+              label={
+                <span className="text-slate-700 dark:text-slate-300 font-semibold flex items-center gap-2">
+                  Personal Interests
+                  <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded uppercase tracking-wider">
+                    NEW
+                  </span>
+                </span>
+              }
+              rules={[
+                {
+                  required: true,
+                  message: "Tell us what you like to learn!",
+                },
+              ]}
+            >
+              <Select
+                mode="multiple"
+                allowClear
+                placeholder="Choose subjects (e.g. Calculus, AI...)"
+                className="w-full rounded-lg"
+                prefix={<StarOutlined className="text-slate-400" />}
+                maxTagCount="responsive"
+              >
+                {categories.map((cat) => (
+                  <Option key={cat._id} value={cat._id}>
+                    {cat.name}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+
+            <Form.Item
               name="password"
               label={
                 <span className="text-slate-700 dark:text-slate-300 font-semibold">
@@ -226,5 +276,4 @@ const Register = () => {
   );
 };
 
-import { useState } from "react";
 export default Register;

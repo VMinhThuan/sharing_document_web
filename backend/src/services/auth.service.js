@@ -19,7 +19,7 @@ const registerUser = async (userData) => {
     throw new Error(error.details[0].message);
   }
 
-  const { email, password, fullName, phoneNumber } = userData;
+  const { email, password, fullName, phoneNumber, interests } = userData;
 
   // Check if user exists
   const userExists = await User.findOne({ email });
@@ -45,6 +45,7 @@ const registerUser = async (userData) => {
     phoneNumber,
     role,
     avatar,
+    interests: interests || [],
   });
 
   if (user) {

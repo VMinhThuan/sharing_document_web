@@ -1,4 +1,5 @@
 import { createContext, useState, useEffect, useContext } from "react";
+import { useNavigate } from "react-router-dom";
 import { loginApi, getMeApi, logoutApi } from "../services/api";
 import { Spin, message } from "antd";
 
@@ -14,6 +15,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
 
   const fetchUser = async () => {
     setIsLoading(true);
@@ -66,6 +68,7 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
         setIsAuthenticated(false);
         message.success("Logged out successfully");
+        navigate("/");
       }
     } catch (error) {
       console.log("Logout API error:", error);

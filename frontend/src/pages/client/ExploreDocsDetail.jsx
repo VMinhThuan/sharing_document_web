@@ -4,7 +4,7 @@ import { getDocumentByIdApi } from "../../services/api";
 import { Spin, Empty, message, Tag, Avatar } from "antd";
 import { formatDateVN } from "../../utils/dateUtils";
 
-const DocumentDetail = () => {
+const ExploreDocsDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [document, setDocument] = useState(null);
@@ -177,6 +177,24 @@ const DocumentDetail = () => {
                           src={document.fileUrl}
                           className="w-full h-auto"
                           alt={document.title}
+                        />
+                      );
+                    }
+                    if (
+                      type.includes("word") ||
+                      type.includes("presentation") ||
+                      type.includes("spreadsheet") ||
+                      type.includes("docx") ||
+                      type.includes("pptx") ||
+                      type.includes("xlsx") ||
+                      type.includes("officedocument") ||
+                      type.includes("msword")
+                    ) {
+                      return (
+                        <iframe
+                          src={`https://docs.google.com/viewer?url=${encodeURIComponent(document.fileUrl)}&embedded=true`}
+                          className="w-full h-[1100px] border-none"
+                          title={document.title}
                         />
                       );
                     }
@@ -361,4 +379,4 @@ const DocumentDetail = () => {
   );
 };
 
-export default DocumentDetail;
+export default ExploreDocsDetail;

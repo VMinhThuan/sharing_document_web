@@ -4,6 +4,17 @@ import { getDocumentsApi } from "../../services/api";
 import { Spin, Empty, message } from "antd";
 import { formatDateVN } from "../../utils/dateUtils";
 
+const formatFileType = (type) => {
+  if (!type) return "FILE";
+  const t = type.toLowerCase();
+  if (t.includes("pdf")) return "PDF";
+  if (t.includes("wordprocessingml") || t.includes("msword")) return "DOCX";
+  if (t.includes("presentationml") || t.includes("powerpoint")) return "PPTX";
+  if (t.includes("spreadsheetml") || t.includes("excel")) return "XLSX";
+  if (t.includes("image")) return "IMG";
+  return t.split("/").pop().toUpperCase().substring(0, 5);
+};
+
 const ExploreDocs = () => {
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -78,9 +89,9 @@ const ExploreDocs = () => {
                       </span>
                     )}
 
-                    <div className="absolute bottom-3 left-3 flex items-center gap-2">
-                      <span className="px-2 py-1 text-[10px] font-bold bg-white/90 dark:bg-black/70 backdrop-blur rounded shadow-sm text-gray-700 dark:text-gray-200 uppercase tracking-wider">
-                        {doc.fileType || "FILE"}
+                    <div className="absolute bottom-3 left-3 flex items-center gap-2 max-w-[80%]">
+                      <span className="px-2 py-1 text-[10px] font-bold bg-white/90 dark:bg-black/70 backdrop-blur rounded shadow-sm text-gray-700 dark:text-gray-200 uppercase tracking-wider truncate">
+                        {formatFileType(doc.fileType)}
                       </span>
                     </div>
                   </div>
@@ -107,12 +118,12 @@ const ExploreDocs = () => {
                     </p>
                   </div>
 
-                  <div className="pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="size-6 bg-primary/10 rounded-full flex items-center justify-center text-[10px] font-bold text-primary">
+                  <div className="pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 overflow-hidden min-w-0 flex-1">
+                      <div className="size-6 bg-primary/10 rounded-full flex items-center justify-center text-[10px] font-bold text-primary shrink-0">
                         {doc.uploadedBy?.fullName?.charAt(0) || "U"}
                       </div>
-                      <span className="text-xs font-semibold text-gray-600 dark:text-gray-400">
+                      <span className="text-xs font-semibold text-gray-600 dark:text-gray-400 truncate">
                         {doc.uploadedBy?.fullName || "Anonymous"}
                       </span>
                     </div>

@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import AdminRoute from "./components/ProtectedRoute/AdminRoute";
 import GuestRoute from "./components/ProtectedRoute/GuestRoute";
+import UserRoute from "./components/ProtectedRoute/UserRoute";
 import ClientLayout from "./layouts/ClientLayout";
 import AdminLayout from "./layouts/AdminLayout";
 
@@ -10,7 +11,6 @@ import Analytics from "./pages/admin/Analytics";
 import Documents from "./pages/admin/Documents";
 import Categories from "./pages/admin/Categories";
 import UploadDocument from "./pages/admin/UploadDocument";
-import DocumentDetail from "./pages/admin/DocumentDetail";
 import Users from "./pages/admin/Users";
 import Comments from "./pages/admin/Comments";
 
@@ -23,19 +23,20 @@ import Preferences from "./pages/client/Preferences";
 import HelpCenter from "./pages/client/HelpCenter";
 import LibraryDetail from "./pages/client/LibraryDetail";
 import ExploreDocs from "./pages/client/ExploreDocs";
+import ExploreDocsDetail from "./pages/client/ExploreDocsDetail";
 
 // Auth & Error Pages
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword from "./pages/auth/ResetPassword";
-import NotFound from "./pages/NotFound";
-import Forbidden from "./pages/Forbidden";
+import NotFound from "./pages/error/NotFound";
+import Forbidden from "./pages/error/Forbidden";
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
+    <Router>
+      <AuthProvider>
         <Routes>
           {/* Public Routes restricted for authenticated users */}
           <Route element={<GuestRoute />}>
@@ -55,7 +56,7 @@ function App() {
               <Route path="analytics" element={<Analytics />} />
               <Route path="documents" element={<Documents />} />
               <Route path="comments" element={<Comments />} />
-              <Route path="documents/:id" element={<DocumentDetail />} />
+              <Route path="documents/:id" element={<ExploreDocsDetail />} />
               <Route path="categories" element={<Categories />} />
               <Route path="upload" element={<UploadDocument />} />
               <Route path="users" element={<Users />} />
@@ -65,21 +66,25 @@ function App() {
           {/* Client Routes */}
           <Route element={<ClientLayout />}>
             <Route path="/" element={<Home />} />
-            <Route path="/library" element={<Library />} />
             <Route path="/documents" element={<ExploreDocs />} />
-            <Route path="/documents/:id" element={<DocumentDetail />} />
-            <Route path="/library/:id" element={<LibraryDetail />} />
-            <Route path="/uploads" element={<Uploads />} />
-            <Route path="/favorites" element={<Favorites />} />
-            <Route path="/preferences" element={<Preferences />} />
+            <Route path="/documents/:id" element={<ExploreDocsDetail />} />
             <Route path="/help-center" element={<HelpCenter />} />
+
+            {/* Private Client Routes */}
+            <Route element={<UserRoute />}>
+              <Route path="/library" element={<Library />} />
+              <Route path="/library/:id" element={<LibraryDetail />} />
+              <Route path="/uploads" element={<Uploads />} />
+              <Route path="/favorites" element={<Favorites />} />
+              <Route path="/preferences" element={<Preferences />} />
+            </Route>
           </Route>
 
           {/* Catch-all for 404 */}
           <Route path="*" element={<NotFound />} />
         </Routes>
-      </Router>
-    </AuthProvider>
+      </AuthProvider>
+    </Router>
   );
 }
 

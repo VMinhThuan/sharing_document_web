@@ -3,12 +3,19 @@ import createInstanceAxios from "./axios.customize";
 const axios = createInstanceAxios(import.meta.env.VITE_BACKEND_URL);
 
 // --- Auth ---
-export const registerApi = (email, password, fullName, phoneNumber) => {
+export const registerApi = (
+  email,
+  password,
+  fullName,
+  phoneNumber,
+  interests,
+) => {
   return axios.post("/api/v1/auth/register", {
     email,
     password,
     fullName,
     phoneNumber,
+    interests,
   });
 };
 

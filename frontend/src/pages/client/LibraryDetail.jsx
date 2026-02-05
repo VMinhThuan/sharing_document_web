@@ -232,6 +232,27 @@ const LibraryDetail = () => {
                   );
                 }
 
+                if (
+                  type.includes("word") ||
+                  type.includes("presentation") ||
+                  type.includes("spreadsheet") ||
+                  type.includes("docx") ||
+                  type.includes("pptx") ||
+                  type.includes("xlsx") ||
+                  type.includes("officedocument") ||
+                  type.includes("msword")
+                ) {
+                  return (
+                    <div className="flex-1 flex flex-col">
+                      <iframe
+                        src={`https://docs.google.com/viewer?url=${encodeURIComponent(document.fileUrl)}&embedded=true`}
+                        className="w-full h-full border-none min-h-[1100px]"
+                        title={document.title}
+                      />
+                    </div>
+                  );
+                }
+
                 // Default for DOCX, XLSX, etc.
                 return (
                   <div className="p-16 md:p-24 flex flex-col gap-8 text-slate-800 dark:text-slate-200 leading-relaxed text-lg">

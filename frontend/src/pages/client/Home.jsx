@@ -4,6 +4,17 @@ import { useAuth } from "../../contexts/AuthContext";
 import { getDocumentsApi } from "../../services/api";
 import { Spin } from "antd";
 
+const formatFileType = (type) => {
+  if (!type) return "FILE";
+  const t = type.toLowerCase();
+  if (t.includes("pdf")) return "PDF";
+  if (t.includes("wordprocessingml") || t.includes("msword")) return "DOCX";
+  if (t.includes("presentationml") || t.includes("powerpoint")) return "PPTX";
+  if (t.includes("spreadsheetml") || t.includes("excel")) return "XLSX";
+  if (t.includes("image")) return "IMG";
+  return t.split("/").pop().toUpperCase().substring(0, 5);
+};
+
 const Home = () => {
   const { user, isAuthenticated } = useAuth();
   const [documents, setDocuments] = useState([]);
@@ -87,41 +98,6 @@ const Home = () => {
                   </div>
                 </div>
               </label>
-              {/* Chips */}
-              <div className="flex gap-2.5 py-4 flex-wrap">
-                <button className="flex h-8 items-center justify-center gap-x-2 rounded-full bg-white dark:bg-[#1a202c] border border-gray-200 dark:border-gray-700 hover:border-primary/50 hover:bg-primary/5 dark:hover:bg-primary/10 pl-3 pr-4 transition-all cursor-pointer shadow-sm">
-                  <span className="material-symbols-outlined text-primary text-[18px]">
-                    science
-                  </span>
-                  <span className="text-[#111318] dark:text-gray-200 text-sm font-medium">
-                    Physics notes
-                  </span>
-                </button>
-                <button className="flex h-8 items-center justify-center gap-x-2 rounded-full bg-white dark:bg-[#1a202c] border border-gray-200 dark:border-gray-700 hover:border-primary/50 hover:bg-primary/5 dark:hover:bg-primary/10 pl-3 pr-4 transition-all cursor-pointer shadow-sm">
-                  <span className="material-symbols-outlined text-green-500 text-[18px]">
-                    description
-                  </span>
-                  <span className="text-[#111318] dark:text-gray-200 text-sm font-medium">
-                    Essay drafts
-                  </span>
-                </button>
-                <button className="flex h-8 items-center justify-center gap-x-2 rounded-full bg-white dark:bg-[#1a202c] border border-gray-200 dark:border-gray-700 hover:border-primary/50 hover:bg-primary/5 dark:hover:bg-primary/10 pl-3 pr-4 transition-all cursor-pointer shadow-sm">
-                  <span className="material-symbols-outlined text-orange-500 text-[18px]">
-                    calculate
-                  </span>
-                  <span className="text-[#111318] dark:text-gray-200 text-sm font-medium">
-                    Calculus II
-                  </span>
-                </button>
-                <button className="flex h-8 items-center justify-center gap-x-2 rounded-full bg-white dark:bg-[#1a202c] border border-gray-200 dark:border-gray-700 hover:border-primary/50 hover:bg-primary/5 dark:hover:bg-primary/10 pl-3 pr-4 transition-all cursor-pointer shadow-sm">
-                  <span className="material-symbols-outlined text-purple-500 text-[18px]">
-                    memory
-                  </span>
-                  <span className="text-[#111318] dark:text-gray-200 text-sm font-medium">
-                    Machine Learning
-                  </span>
-                </button>
-              </div>
             </div>
           </div>
           {/* Content Grid */}
@@ -204,18 +180,18 @@ const Home = () => {
                               "Browse through high-quality study materials tailored for your subjects."}
                           </p>
                         </div>
-                        <div className="flex items-center justify-between mt-auto pt-2 border-t border-gray-100 dark:border-gray-800">
-                          <div className="flex items-center gap-2">
-                            <div className="bg-primary/10 rounded-full size-6 flex items-center justify-center text-[10px] font-bold text-primary">
+                        <div className="flex items-center justify-between mt-auto pt-2 border-t border-gray-100 dark:border-gray-800 gap-3">
+                          <div className="flex items-center gap-2 overflow-hidden min-w-0 flex-1">
+                            <div className="bg-primary/10 rounded-full size-6 flex items-center justify-center text-[10px] font-bold text-primary shrink-0">
                               {doc.uploadedBy?.fullName?.charAt(0) || "U"}
                             </div>
-                            <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
+                            <span className="text-xs font-medium text-gray-600 dark:text-gray-300 truncate">
                               {doc.uploadedBy?.fullName || "Anonymous"}
                             </span>
                           </div>
-                          <div className="flex items-center gap-3 text-gray-400 text-xs">
+                          <div className="flex items-center gap-3 text-gray-400 text-xs shrink-0">
                             <span className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-gray-600 dark:text-gray-300 font-bold uppercase">
-                              {doc.fileType || "FILE"}
+                              {formatFileType(doc.fileType)}
                             </span>
                           </div>
                         </div>

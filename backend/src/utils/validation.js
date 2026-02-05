@@ -18,6 +18,7 @@ const registerSchema = Joi.object({
     "string.pattern.base": passwordError,
   }),
   phoneNumber: Joi.string().allow("").optional(),
+  interests: Joi.array().items(Joi.string()).optional(),
 });
 
 const loginSchema = Joi.object({

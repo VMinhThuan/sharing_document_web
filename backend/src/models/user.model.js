@@ -57,6 +57,12 @@ const userSchema = new mongoose.Schema({
   lastLogin: {
     type: Date,
   },
+  interests: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Category",
+    },
+  ],
   createdAt: {
     type: Date,
     default: Date.now,
