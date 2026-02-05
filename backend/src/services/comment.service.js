@@ -69,10 +69,39 @@ const updateComment = async (id, userId, content, role) => {
   return comment;
 };
 
+const toggleLike = async (commentId, userId) => {
+  const comment = await Comment.findById(commentId);
+  if (!comment) throw new Error("Comment not found");
+
+  const isLiked = comment.likes.includes(userId);
+
+  if (isLiked) {
+    // Unlike
+    comment.likes = comment.likes.filter(
+      (id) => id.toString() !== userId.toString(),
+    );
+  } else {
+    // Like
+    comment.likes.push(userId);
+  }
+
+  await comment.save();
+  return comment;
+};
+
+const getLikedComments = async (userId) => {
+  return await Comment.find({ likes: userId })
+    .populate("user", "fullName avatar")
+    .populate("document", "title")
+    .sort({ createdAt: -1 });
+};
+
 module.exports = {
   getAllComments,
   getCommentsByDocument,
   createComment,
   deleteComment,
   updateComment,
+  toggleLike,
+  getLikedComments,
 };

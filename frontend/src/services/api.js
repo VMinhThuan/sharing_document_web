@@ -77,6 +77,10 @@ export const getDocumentsApi = (status) => {
   return axios.get(`/api/v1/documents?status=${status || ""}`);
 };
 
+export const searchDocumentsApi = (query) => {
+  return axios.get(`/api/v1/documents/search?q=${query || ""}`);
+};
+
 export const getMyDocumentsApi = () => {
   return axios.get("/api/v1/documents/me");
 };
@@ -157,4 +161,12 @@ export const createCommentApi = (
 
 export const deleteCommentApi = (id) => {
   return axios.delete(`/api/v1/comments/${id}`);
+};
+
+export const toggleCommentLikeApi = (id) => {
+  return axios.post(`/api/v1/comments/${id}/like`);
+};
+
+export const getFavoriteCommentsApi = () => {
+  return axios.get("/api/v1/comments/favorites/me");
 };

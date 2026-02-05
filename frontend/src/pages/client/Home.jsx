@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { getDocumentsApi, toggleFavoriteApi } from "../../services/api";
 import { Spin, message } from "antd";
@@ -17,8 +17,23 @@ const formatFileType = (type) => {
 
 const Home = () => {
   const { user, isAuthenticated, refreshUser } = useAuth();
+  const navigate = useNavigate();
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const handleSearch = (e) => {
+    if (e) e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") {
+      handleSearch();
+    }
+  };
 
   const handleToggleFavorite = async (e, docId) => {
     e.preventDefault();
@@ -112,9 +127,15 @@ const Home = () => {
                   <input
                     className="flex w-full min-w-0 flex-1 resize-none bg-transparent border-none focus:ring-0 text-[#111318] dark:text-white placeholder:text-[#60708a] px-2 text-base font-normal leading-normal h-full"
                     placeholder="Ask a question or search for 'Calculus notes'..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={handleKeyDown}
                   />
                   <div className="flex items-center pr-2">
-                    <button className="bg-primary hover:bg-blue-600 text-white p-2 rounded-lg transition-colors flex items-center justify-center">
+                    <button
+                      onClick={handleSearch}
+                      className="bg-primary hover:bg-blue-600 text-white p-2 rounded-lg transition-colors flex items-center justify-center"
+                    >
                       <span className="material-symbols-outlined">search</span>
                     </button>
                   </div>

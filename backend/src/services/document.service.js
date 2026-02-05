@@ -56,10 +56,24 @@ const getUserDocuments = async (userId) => {
     .sort({ createdAt: -1 });
 };
 
+const searchDocuments = async (query) => {
+  return await Document.find({
+    status: "approved",
+    $or: [
+      { title: { $regex: query, $options: "i" } },
+      { description: { $regex: query, $options: "i" } },
+    ],
+  })
+    .populate("uploadedBy", "fullName avatar")
+    .populate("category", "name")
+    .sort({ createdAt: -1 });
+};
+
 module.exports = {
   getDocuments,
   getDocumentById,
   getUserDocuments,
+  searchDocuments,
   createDocument,
   updateDocument,
   approveDocument,

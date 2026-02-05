@@ -256,6 +256,19 @@ const viewDocument = async (req, res) => {
   }
 };
 
+const searchDocuments = async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q) {
+      return successResponse(res, 200, "Search query is empty", []);
+    }
+    const docs = await documentService.searchDocuments(q);
+    successResponse(res, 200, "Search results retrieved", docs);
+  } catch (error) {
+    errorResponse(res, 500, "Server Error", error.message);
+  }
+};
+
 module.exports = {
   getDocuments,
   getDocument,
@@ -268,4 +281,5 @@ module.exports = {
   getMyDocuments,
   toggleFavorite,
   getFavorites,
+  searchDocuments,
 };

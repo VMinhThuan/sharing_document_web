@@ -63,10 +63,33 @@ const updateComment = async (req, res) => {
   }
 };
 
+const toggleCommentLike = async (req, res) => {
+  try {
+    const comment = await commentService.toggleLike(
+      req.params.id,
+      req.user._id,
+    );
+    successResponse(res, 200, "Like toggled", comment);
+  } catch (error) {
+    errorResponse(res, 400, "Action failed", error.message);
+  }
+};
+
+const getLikedComments = async (req, res) => {
+  try {
+    const comments = await commentService.getLikedComments(req.user._id);
+    successResponse(res, 200, "Liked comments retrieved", comments);
+  } catch (error) {
+    errorResponse(res, 500, "Server Error", error.message);
+  }
+};
+
 module.exports = {
   getComments,
   getDocumentComments,
   createComment,
   deleteComment,
   updateComment,
+  toggleCommentLike,
+  getLikedComments,
 };

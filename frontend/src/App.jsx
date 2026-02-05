@@ -1,4 +1,9 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import AdminRoute from "./components/ProtectedRoute/AdminRoute";
 import GuestRoute from "./components/ProtectedRoute/GuestRoute";
@@ -24,6 +29,7 @@ import HelpCenter from "./pages/client/HelpCenter";
 import LibraryDetail from "./pages/client/LibraryDetail";
 import ExploreDocs from "./pages/client/ExploreDocs";
 import ExploreDocsDetail from "./pages/client/ExploreDocsDetail";
+import Search from "./pages/client/Search";
 
 // Auth & Error Pages
 import Login from "./pages/auth/Login";
@@ -52,7 +58,10 @@ function App() {
           {/* Admin Routes (Protected) */}
           <Route path="/admin" element={<AdminRoute />}>
             <Route element={<AdminLayout />}>
-              <Route index element={<Analytics />} />
+              <Route
+                index
+                element={<Navigate to="/admin/analytics" replace />}
+              />
               <Route path="analytics" element={<Analytics />} />
               <Route path="documents" element={<Documents />} />
               <Route path="comments" element={<Comments />} />
@@ -67,6 +76,7 @@ function App() {
           <Route element={<ClientLayout />}>
             <Route path="/" element={<Home />} />
             <Route path="/documents" element={<ExploreDocs />} />
+            <Route path="/search" element={<Search />} />
             <Route path="/documents/:id" element={<ExploreDocsDetail />} />
             <Route path="/help-center" element={<HelpCenter />} />
 

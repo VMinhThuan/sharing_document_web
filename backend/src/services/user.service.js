@@ -1,8 +1,22 @@
 const User = require("../models/user.model");
+const Document = require("../models/document.model");
 
 const getAllUsers = async (query) => {
-  // Basic pagination logic could be added here
-  return await User.find().select("-password").sort({ createdAt: -1 });
+  const users = await User.find().select("-password").sort({ createdAt: -1 });
+
+  // Get used storage for each user
+  const userListWithStorage = await Promise.all(
+    users.map(async (user) => {
+      const docs = await Document.find({ uploadedBy: user._id });
+      const totalUsedSize = docs.reduce((acc, doc) => acc + (doc.size || 0), 0);
+      return {
+        ...user.toObject(),
+        totalUsedSize,
+      };
+    }),
+  );
+
+  return userListWithStorage;
 };
 
 const getUserById = async (id) => {

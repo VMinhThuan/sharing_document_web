@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   getDocumentByIdApi,
@@ -6,6 +6,7 @@ import {
   getDocumentCommentsApi,
   createCommentApi,
   deleteCommentApi,
+  toggleCommentLikeApi,
 } from "../../services/api";
 import { useAuth } from "../../contexts/AuthContext";
 import { Spin, Empty, message, Tag, Avatar, Popconfirm } from "antd";
@@ -22,6 +23,13 @@ const ExploreDocsDetail = () => {
   const [commentLoading, setCommentLoading] = useState(false);
   const [replyingTo, setReplyingTo] = useState(null); // { id, fullName }
   const [expandedComments, setExpandedComments] = useState({}); // { commentId: boolean }
+  const replyInputRef = useRef(null);
+
+  useEffect(() => {
+    if (replyingTo && replyInputRef.current) {
+      replyInputRef.current.focus();
+    }
+  }, [replyingTo]);
 
   const fetchComments = async () => {
     try {
@@ -70,6 +78,21 @@ const ExploreDocsDetail = () => {
     } catch (error) {
       console.error("Failed to delete comment:", error);
       message.error("Failed to delete comment");
+    }
+  };
+
+  const handleLikeComment = async (commentId) => {
+    if (!isAuthenticated) {
+      message.warning("Please login to like comments");
+      return;
+    }
+    try {
+      const res = await toggleCommentLikeApi(commentId);
+      if (res && res.statusCode === 200) {
+        fetchComments();
+      }
+    } catch (error) {
+      console.error("Failed to like comment:", error);
     }
   };
 
@@ -478,9 +501,12 @@ const ExploreDocsDetail = () => {
                           .filter((c) => c.parentComment === comment._id)
                           .reverse();
                         const isExpanded = expandedComments[comment._id];
+                        // Facebook style: level 0 shows some replies, level > 0 hides all until clicked
                         const visibleReplies = isExpanded
                           ? directReplies
-                          : directReplies.slice(0, 3);
+                          : level === 0
+                            ? directReplies.slice(0, 3)
+                            : [];
 
                         return (
                           <div key={comment._id} className="group">
@@ -512,6 +538,29 @@ const ExploreDocsDetail = () => {
                                   </p>
                                 </div>
                                 <div className="flex items-center gap-4 mt-2 px-2">
+                                  <button
+                                    onClick={() =>
+                                      handleLikeComment(comment._id)
+                                    }
+                                    className={`flex items-center gap-1 text-[11px] font-bold uppercase tracking-widest transition-colors ${
+                                      comment.likes?.includes(user?._id)
+                                        ? "text-primary"
+                                        : "text-gray-400 hover:text-primary"
+                                    }`}
+                                  >
+                                    <span
+                                      className="material-symbols-outlined text-sm"
+                                      style={{
+                                        fontVariationSettings:
+                                          comment.likes?.includes(user?._id)
+                                            ? "'FILL' 1"
+                                            : "'FILL' 0",
+                                      }}
+                                    >
+                                      thumb_up
+                                    </span>
+                                    {comment.likes?.length || 0}
+                                  </button>
                                   <button
                                     onClick={() =>
                                       setReplyingTo({
@@ -547,23 +596,27 @@ const ExploreDocsDetail = () => {
                                     renderComment(reply, level + 1),
                                   )}
 
-                                  {!isExpanded && directReplies.length > 3 && (
-                                    <button
-                                      onClick={() =>
-                                        setExpandedComments((prev) => ({
-                                          ...prev,
-                                          [comment._id]: true,
-                                        }))
-                                      }
-                                      className="text-[11px] font-extrabold text-primary hover:underline flex items-center gap-2 mt-2"
-                                    >
-                                      <span className="material-symbols-outlined text-[14px]">
-                                        subdirectory_arrow_right
-                                      </span>
-                                      View {directReplies.length - 3} more
-                                      replies
-                                    </button>
-                                  )}
+                                  {/* View More Button */}
+                                  {!isExpanded &&
+                                    directReplies.length >
+                                      (level === 0 ? 3 : 0) && (
+                                      <button
+                                        onClick={() =>
+                                          setExpandedComments((prev) => ({
+                                            ...prev,
+                                            [comment._id]: true,
+                                          }))
+                                        }
+                                        className="text-[11px] font-extrabold text-primary hover:underline flex items-center gap-2 mt-2"
+                                      >
+                                        <span className="material-symbols-outlined text-[14px]">
+                                          subdirectory_arrow_right
+                                        </span>
+                                        {level === 0
+                                          ? `View ${directReplies.length - 3} more replies`
+                                          : `View ${directReplies.length} ${directReplies.length > 1 ? "replies" : "reply"}`}
+                                      </button>
+                                    )}
 
                                   {replyingTo?.id === comment._id && (
                                     <div className="mt-4 flex gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
@@ -578,6 +631,7 @@ const ExploreDocsDetail = () => {
                                       <div className="flex-1">
                                         <div className="relative">
                                           <textarea
+                                            ref={replyInputRef}
                                             autoFocus
                                             placeholder={`Reply to ${replyingTo.fullName}...`}
                                             className="w-full bg-slate-50 dark:bg-slate-900 border border-gray-200 dark:border-gray-800 rounded-xl p-3 text-xs focus:outline-none focus:ring-1 focus:ring-primary h-20 resize-none pr-12"

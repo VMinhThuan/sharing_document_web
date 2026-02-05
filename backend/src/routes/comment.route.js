@@ -9,6 +9,8 @@ router.get("/", protect, authorize("admin"), commentController.getComments);
 // Authenticated users:
 router.post("/", protect, commentController.createComment);
 router.get("/document/:documentId", commentController.getDocumentComments);
+router.get("/favorites/me", protect, commentController.getLikedComments);
+router.post("/:id/like", protect, commentController.toggleCommentLike);
 router.delete("/:id", protect, commentController.deleteComment);
 router.put("/:id", protect, commentController.updateComment);
 

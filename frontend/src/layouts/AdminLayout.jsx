@@ -172,7 +172,10 @@ const AdminLayout = () => {
               className="hover:bg-gray-50 rounded-lg transition-colors"
             >
               <Avatar
-                src={user?.avatar}
+                src={
+                  user?.avatar ||
+                  "https://lh3.googleusercontent.com/aida-public/AB6AXuAyywXwl8gB4T9Bg9qX9-leZ11D89IRurmjopEmaVLe8fb1_-XmfW1qUAPN3KTlfYeZLGrh9uOinAWO3tx9Cng6KTAzRaGPZO6ssq3XLlkWshY4TdFL5sT7304FdXjnyxvK-TQaIRgl4mIXVSqVdP7URgiFAnEZwYQsjE2ChCLfk5RkWy9766mMFa_vVjnxX4UQP02KzTlFdpcxCUh_GQw3qsS1e_soqV_xAd8Us7trwMTUApJxzEI99yqJ4z0-NIcLKFutPvmtQkg"
+                }
                 icon={<UserOutlined />}
                 size="default"
               />

@@ -13,6 +13,12 @@ router.post(
   documentController.createDocument,
 );
 router.get(
+  "/search",
+  protect,
+  authorize("admin", "user"),
+  documentController.searchDocuments,
+);
+router.get(
   "/me",
   protect,
   authorize("admin", "user"),
