@@ -1,7 +1,11 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
-import { getDocumentsApi, toggleFavoriteApi } from "../../services/api";
+import {
+  getDocumentsApi,
+  toggleFavoriteApi,
+  getRecentlyViewedApi,
+} from "../../services/api";
 import { Spin, message } from "antd";
 
 const formatFileType = (type) => {
@@ -15,11 +19,33 @@ const formatFileType = (type) => {
   return t.split("/").pop().toUpperCase().substring(0, 5);
 };
 
+const formatTimeAgo = (date) => {
+  if (!date) return "";
+  const now = new Date();
+  const diffInSeconds = Math.floor((now - new Date(date)) / 1000);
+
+  if (diffInSeconds < 60) return "Just now";
+  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} mins ago`;
+  if (diffInSeconds < 86400)
+    return `${Math.floor(diffInSeconds / 3600)} hours ago`;
+  return `${Math.floor(diffInSeconds / 86400)} days ago`;
+};
+
+const formatSize = (bytes) => {
+  if (!bytes) return "0 B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
+};
+
 const Home = () => {
   const { user, isAuthenticated, refreshUser } = useAuth();
   const navigate = useNavigate();
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [recentDocs, setRecentDocs] = useState([]);
+  const [recentLoading, setRecentLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
   const handleSearch = (e) => {
@@ -75,6 +101,26 @@ const Home = () => {
 
     fetchHomeData();
   }, []);
+
+  useEffect(() => {
+    const fetchRecent = async () => {
+      if (!isAuthenticated) {
+        setRecentLoading(false);
+        return;
+      }
+      try {
+        const res = await getRecentlyViewedApi();
+        if (res && res.statusCode === 200) {
+          setRecentDocs(res.data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch recent docs:", error);
+      } finally {
+        setRecentLoading(false);
+      }
+    };
+    fetchRecent();
+  }, [isAuthenticated]);
 
   const getGreeting = () => {
     // Vietnam Time (UTC+7)
@@ -323,47 +369,70 @@ const Home = () => {
               </div>
             </section>
             {/* Recently Viewed (List View) */}
-            <section>
-              <h2 className="text-[#111318] dark:text-white text-xl font-bold leading-tight mb-4 px-1">
-                Recently Viewed
-              </h2>
-              <div className="bg-white dark:bg-[#1a202c] rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
-                <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center gap-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer group">
-                  <div className="size-10 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-red-500">
-                    <span className="material-symbols-outlined">
-                      picture_as_pdf
-                    </span>
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="text-sm font-bold text-gray-900 dark:text-white group-hover:text-primary">
-                      Advanced Calculus - Week 4.pdf
-                    </h4>
-                    <p className="text-xs text-gray-500">
-                      Viewed 2 hours ago • 4.5MB
-                    </p>
-                  </div>
-                  <div className="hidden md:block text-xs font-medium px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-gray-600 dark:text-gray-300">
-                    Math
-                  </div>
+            {isAuthenticated && recentDocs.length > 0 && (
+              <section>
+                <div className="flex items-center justify-between mb-4 px-1">
+                  <h2 className="text-[#111318] dark:text-white text-xl font-bold leading-tight">
+                    Recently Viewed
+                  </h2>
                 </div>
-                <div className="p-4 flex items-center gap-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer group">
-                  <div className="size-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-500">
-                    <span className="material-symbols-outlined">article</span>
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="text-sm font-bold text-gray-900 dark:text-white group-hover:text-primary">
-                      Project Management Finals.docx
-                    </h4>
-                    <p className="text-xs text-gray-500">
-                      Viewed yesterday • 1.2MB
-                    </p>
-                  </div>
-                  <div className="hidden md:block text-xs font-medium px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-gray-600 dark:text-gray-300">
-                    Business
-                  </div>
+                <div className="bg-white dark:bg-[#1a202c] rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
+                  {recentLoading ? (
+                    <div className="p-10 flex justify-center">
+                      <Spin />
+                    </div>
+                  ) : (
+                    recentDocs.map((item, index) => {
+                      const doc = item.document;
+                      if (!doc) return null;
+                      return (
+                        <Link
+                          key={doc._id}
+                          to={`/documents/${doc._id}`}
+                          className={`p-4 flex items-center gap-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer group ${
+                            index !== recentDocs.length - 1
+                              ? "border-b border-gray-100 dark:border-gray-800"
+                              : ""
+                          }`}
+                        >
+                          <div
+                            className={`size-10 rounded-lg flex items-center justify-center ${
+                              doc.fileType?.toLowerCase().includes("pdf")
+                                ? "bg-red-50 dark:bg-red-900/20 text-red-500"
+                                : doc.fileType?.toLowerCase().includes("image")
+                                  ? "bg-blue-50 dark:bg-blue-900/20 text-blue-500"
+                                  : "bg-primary/5 dark:bg-primary/10 text-primary"
+                            }`}
+                          >
+                            <span className="material-symbols-outlined">
+                              {doc.fileType?.toLowerCase().includes("pdf")
+                                ? "picture_as_pdf"
+                                : doc.fileType?.toLowerCase().includes("image")
+                                  ? "image"
+                                  : "article"}
+                            </span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="text-sm font-bold text-gray-900 dark:text-white group-hover:text-primary transition-colors truncate">
+                              {doc.title}
+                            </h4>
+                            <p className="text-[11px] text-gray-500 font-medium">
+                              Viewed {formatTimeAgo(item.viewedAt)} •{" "}
+                              {formatSize(doc.size)}
+                            </p>
+                          </div>
+                          <div className="hidden md:block text-[10px] font-bold px-2 py-0.5 bg-gray-100 dark:bg-gray-700/50 rounded-full text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-600">
+                            {typeof doc.category === "object"
+                              ? doc.category?.name
+                              : "General"}
+                          </div>
+                        </Link>
+                      );
+                    })
+                  )}
                 </div>
-              </div>
-            </section>
+              </section>
+            )}
           </div>
         </div>
       </div>

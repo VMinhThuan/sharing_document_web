@@ -93,6 +93,14 @@ export const getFavoritesApi = () => {
   return axios.get("/api/v1/documents/favorites");
 };
 
+export const addRecentlyViewedApi = (id) => {
+  return axios.post(`/api/v1/documents/recent/${id}`);
+};
+
+export const getRecentlyViewedApi = () => {
+  return axios.get("/api/v1/documents/recent");
+};
+
 export const getDocumentByIdApi = (id) => {
   return axios.get(`/api/v1/documents/${id}`);
 };

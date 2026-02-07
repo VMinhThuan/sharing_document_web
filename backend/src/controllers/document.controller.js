@@ -269,6 +269,28 @@ const searchDocuments = async (req, res) => {
   }
 };
 
+const addRecentlyViewed = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const recentlyViewed = await userService.addRecentlyViewed(
+      req.user._id,
+      id,
+    );
+    successResponse(res, 200, "Recently viewed added", recentlyViewed);
+  } catch (error) {
+    errorResponse(res, 500, "Server Error", error.message);
+  }
+};
+
+const getRecentlyViewed = async (req, res) => {
+  try {
+    const recentlyViewed = await userService.getRecentlyViewed(req.user._id);
+    successResponse(res, 200, "Recently viewed retrieved", recentlyViewed);
+  } catch (error) {
+    errorResponse(res, 500, "Server Error", error.message);
+  }
+};
+
 module.exports = {
   getDocuments,
   getDocument,
@@ -282,4 +304,6 @@ module.exports = {
   toggleFavorite,
   getFavorites,
   searchDocuments,
+  addRecentlyViewed,
+  getRecentlyViewed,
 };

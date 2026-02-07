@@ -104,6 +104,40 @@ const getFavorites = async (userId) => {
   return user.favorites;
 };
 
+const addRecentlyViewed = async (userId, documentId) => {
+  const user = await User.findById(userId);
+  if (!user) throw new Error("User not found");
+
+  // Remove if exists to move to top
+  user.recentlyViewed = user.recentlyViewed.filter(
+    (item) =>
+      item.document && item.document.toString() !== documentId.toString(),
+  );
+
+  // Add to front
+  user.recentlyViewed.unshift({ document: documentId, viewedAt: new Date() });
+
+  // Limit to 5
+  if (user.recentlyViewed.length > 5) {
+    user.recentlyViewed = user.recentlyViewed.slice(0, 5);
+  }
+
+  await user.save();
+  return user.recentlyViewed;
+};
+
+const getRecentlyViewed = async (userId) => {
+  const user = await User.findById(userId).populate({
+    path: "recentlyViewed.document",
+    populate: {
+      path: "category",
+      select: "name",
+    },
+  });
+  if (!user) throw new Error("User not found");
+  return user.recentlyViewed;
+};
+
 module.exports = {
   getAllUsers,
   getUserById,
@@ -113,4 +147,6 @@ module.exports = {
   toggleUserStatus,
   toggleFavorite,
   getFavorites,
+  addRecentlyViewed,
+  getRecentlyViewed,
 };

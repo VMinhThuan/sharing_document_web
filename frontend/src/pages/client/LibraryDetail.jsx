@@ -1,6 +1,10 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { getDocumentByIdApi, toggleFavoriteApi } from "../../services/api";
+import {
+  getDocumentByIdApi,
+  toggleFavoriteApi,
+  addRecentlyViewedApi,
+} from "../../services/api";
 import { useAuth } from "../../contexts/AuthContext";
 import { Spin, Empty, message } from "antd";
 import { formatDateVN } from "../../utils/dateUtils";
@@ -40,6 +44,12 @@ const LibraryDetail = () => {
         const res = await getDocumentByIdApi(id);
         if (res && res.statusCode === 200) {
           setDocument(res.data);
+          // Add to recently viewed if authenticated
+          if (isAuthenticated) {
+            addRecentlyViewedApi(id).catch((err) =>
+              console.error("Failed to add to recently viewed:", err),
+            );
+          }
         } else {
           message.error("Document not found");
         }
@@ -52,7 +62,7 @@ const LibraryDetail = () => {
     };
 
     fetchDocument();
-  }, [id]);
+  }, [id, isAuthenticated]);
 
   if (loading) {
     return (

@@ -37,6 +37,18 @@ router.post(
   documentController.toggleFavorite,
 );
 router.get(
+  "/recent",
+  protect,
+  authorize("admin", "user"),
+  documentController.getRecentlyViewed,
+);
+router.post(
+  "/recent/:id",
+  protect,
+  authorize("admin", "user"),
+  documentController.addRecentlyViewed,
+);
+router.get(
   "/:id",
   protect,
   authorize("admin", "user"),

@@ -69,6 +69,18 @@ const userSchema = new mongoose.Schema({
       ref: "Document",
     },
   ],
+  recentlyViewed: [
+    {
+      document: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Document",
+      },
+      viewedAt: {
+        type: Date,
+        default: Date.now,
+      },
+    },
+  ],
   createdAt: {
     type: Date,
     default: Date.now,
