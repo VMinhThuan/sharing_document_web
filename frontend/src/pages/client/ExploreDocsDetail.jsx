@@ -8,6 +8,7 @@ import {
   deleteCommentApi,
   toggleCommentLikeApi,
   addRecentlyViewedApi,
+  recordDownloadApi,
 } from "../../services/api";
 import { useAuth } from "../../contexts/AuthContext";
 import { Spin, Empty, message, Tag, Avatar, Popconfirm } from "antd";
@@ -175,6 +176,20 @@ const ExploreDocsDetail = () => {
   const handleZoomIn = () => setZoom((prev) => Math.min(prev + 10, 200));
   const handleZoomOut = () => setZoom((prev) => Math.max(prev - 10, 50));
 
+  const handleDownload = async () => {
+    try {
+      // Record download analytics
+      recordDownloadApi(id).catch((err) =>
+        console.error("Failed to record download:", err),
+      );
+
+      // Open file in new tab
+      window.open(document.fileUrl, "_blank");
+    } catch (error) {
+      console.error("Download handling error:", error);
+    }
+  };
+
   return (
     <div className="flex-1 flex flex-col bg-[#f9fafb] dark:bg-background-dark min-h-full">
       {/* Premium Header */}
@@ -218,7 +233,7 @@ const ExploreDocsDetail = () => {
             </div>
             <div className="flex items-center gap-3">
               <button
-                onClick={() => window.open(document.fileUrl, "_blank")}
+                onClick={handleDownload}
                 className="flex items-center gap-2 px-5 py-2 rounded-xl bg-primary text-white hover:bg-blue-600 font-bold transition-all shadow-lg shadow-primary/20"
               >
                 <span className="material-symbols-outlined">download</span>

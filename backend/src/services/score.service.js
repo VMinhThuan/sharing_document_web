@@ -215,6 +215,19 @@ const updateScoreOnFavorite = async (documentId) => {
   return doc;
 };
 
+const updateScoreOnDownload = async (documentId) => {
+  const doc = await Document.findById(documentId);
+  if (!doc) return;
+
+  const favoriteCount = await User.countDocuments({ favorites: documentId });
+  doc.dynamicScore = doc.dynamicScore || {};
+  doc.dynamicScore.favoriteCount = favoriteCount;
+  doc.calculateDynamicScore();
+
+  await doc.save();
+  return doc;
+};
+
 module.exports = {
   setDocumentScore,
   getScoreHistory,
@@ -223,4 +236,5 @@ module.exports = {
   getScoreAnalytics,
   updateScoreOnView,
   updateScoreOnFavorite,
+  updateScoreOnDownload,
 };

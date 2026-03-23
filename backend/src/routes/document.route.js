@@ -100,6 +100,13 @@ router.get(
   documentController.viewDocument,
 );
 
+router.post(
+  "/download/:id",
+  protect,
+  authorize("admin", "user"),
+  documentController.recordDownload,
+);
+
 router.put(
   "/:id/approve",
   protect,

@@ -131,6 +131,10 @@ export const getDocumentByIdApi = (id) => {
   return axios.get(`/api/v1/documents/${id}`);
 };
 
+export const recordDownloadApi = (id) => {
+  return axios.post(`/api/v1/documents/download/${id}`);
+};
+
 export const approveDocumentApi = (id) => {
   return axios.put(`/api/v1/documents/${id}/approve`);
 };

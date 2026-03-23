@@ -426,6 +426,32 @@ const getScoreAnalytics = async (req, res) => {
   }
 };
 
+const recordDownload = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Increment download count
+    const doc = await Document.findByIdAndUpdate(
+      id,
+      { $inc: { downloads: 1 } },
+      { new: true },
+    );
+
+    // Update dynamic score based on new download count
+    if (doc) {
+      try {
+        await scoreService.updateScoreOnDownload(id);
+      } catch (scoreErr) {
+        console.error("Score update on download failed:", scoreErr.message);
+      }
+    }
+
+    successResponse(res, 200, "Download recorded", { downloads: doc.downloads });
+  } catch (error) {
+    errorResponse(res, 500, "Server Error", error.message);
+  }
+};
+
 module.exports = {
   getDocuments,
   getDocument,
@@ -447,4 +473,5 @@ module.exports = {
   getScoreHistory,
   recalculateAllScores,
   getScoreAnalytics,
+  recordDownload,
 };

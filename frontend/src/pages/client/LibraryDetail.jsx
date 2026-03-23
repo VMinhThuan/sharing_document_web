@@ -4,6 +4,7 @@ import {
   getDocumentByIdApi,
   toggleFavoriteApi,
   addRecentlyViewedApi,
+  recordDownloadApi,
 } from "../../services/api";
 import { useAuth } from "../../contexts/AuthContext";
 import { Spin, Empty, message } from "antd";
@@ -95,6 +96,20 @@ const LibraryDetail = () => {
 
   const handleZoomIn = () => setZoom((prev) => Math.min(prev + 10, 200));
   const handleZoomOut = () => setZoom((prev) => Math.max(prev - 10, 50));
+
+  const handleDownload = async () => {
+    try {
+      // Record download analytics
+      recordDownloadApi(id).catch((err) =>
+        console.error("Failed to record download:", err),
+      );
+
+      // Open file in new tab
+      window.open(document.fileUrl, "_blank");
+    } catch (error) {
+      console.error("Download handling error:", error);
+    }
+  };
 
   return (
     <div className="flex flex-1 h-full overflow-hidden bg-[#f9fafb] dark:bg-background-dark">
@@ -219,7 +234,7 @@ const LibraryDetail = () => {
                 </span>
               </button>
               <button
-                onClick={() => window.open(document.fileUrl, "_blank")}
+                onClick={handleDownload}
                 className="p-2.5 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800 hover:text-primary border border-transparent hover:border-slate-200 dark:hover:border-slate-700 shadow-none hover:shadow-sm transition-all"
                 title="Download"
               >
