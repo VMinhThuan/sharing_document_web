@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import {
   getMyDocumentsApi,
   createDocumentApi,
@@ -372,9 +373,12 @@ const Uploads = () => {
                               {getFileIcon(doc.fileType)}
                             </div>
                             <div className="min-w-0">
-                              <p className="font-bold text-[#0f172a] dark:text-white text-sm truncate max-w-[250px] group-hover:text-primary transition-colors">
+                              <Link 
+                                to={`/library/${doc._id}`}
+                                className="font-bold text-[#0f172a] dark:text-white text-sm truncate max-w-[250px] group-hover:text-primary hover:underline transition-colors block"
+                              >
                                 {doc.title}
-                              </p>
+                              </Link>
                               <p className="text-[11px] text-[#64748b] dark:text-gray-500 truncate max-w-[200px] font-medium leading-normal mt-0.5">
                                 {doc.description || "No description provided"}
                               </p>
