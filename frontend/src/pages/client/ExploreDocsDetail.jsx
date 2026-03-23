@@ -119,14 +119,17 @@ const ExploreDocsDetail = () => {
   const [zoom, setZoom] = useState(100);
 
   useEffect(() => {
+    let cancelled = false;
+
     const fetchDocument = async () => {
       setLoading(true);
       try {
         const res = await getDocumentByIdApi(id);
+        if (cancelled) return;
         if (res && res.statusCode === 200) {
           setDocument(res.data);
-          // Add to recently viewed if authenticated
-          if (isAuthenticated) {
+          // Add to recently viewed if authenticated (only once)
+          if (isAuthenticated && !cancelled) {
             addRecentlyViewedApi(id).catch((err) =>
               console.error("Failed to add to recently viewed:", err),
             );
@@ -136,21 +139,26 @@ const ExploreDocsDetail = () => {
           navigate("/documents");
         }
       } catch (error) {
+        if (cancelled) return;
         console.error("Failed to fetch document:", error);
         message.error("Failed to load document");
         navigate("/documents");
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
     fetchDocument();
     fetchComments();
+
+    return () => {
+      cancelled = true;
+    };
   }, [id, isAuthenticated]);
 
   if (loading) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-background-light dark:bg-background-dark min-h-screen">
+      <div className="flex-1 flex items-center justify-center bg-[#f9fafb] dark:bg-background-dark min-h-screen">
         <Spin size="large" />
       </div>
     );
@@ -158,7 +166,7 @@ const ExploreDocsDetail = () => {
 
   if (!document) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-background-light dark:bg-background-dark min-h-screen">
+      <div className="flex-1 flex items-center justify-center bg-[#f9fafb] dark:bg-background-dark min-h-screen">
         <Empty description="Document not found" />
       </div>
     );
@@ -168,7 +176,7 @@ const ExploreDocsDetail = () => {
   const handleZoomOut = () => setZoom((prev) => Math.max(prev - 10, 50));
 
   return (
-    <div className="flex-1 flex flex-col bg-slate-50 dark:bg-slate-900/40 min-h-full">
+    <div className="flex-1 flex flex-col bg-[#f9fafb] dark:bg-background-dark min-h-full">
       {/* Premium Header */}
       <header className="bg-white dark:bg-[#1a202c] border-b border-gray-200 dark:border-gray-800 sticky top-0 z-20 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">

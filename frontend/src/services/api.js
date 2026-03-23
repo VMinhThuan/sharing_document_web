@@ -46,6 +46,18 @@ export const updatePasswordApi = (currentPassword, newPassword) => {
   });
 };
 
+export const updateProfileApi = (userData) => {
+  return axios.put("/api/v1/auth/updateprofile", userData);
+};
+
+export const uploadFileApi = (formData) => {
+  return axios.post("/api/v1/upload", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+};
+
 // --- Dashboard ---
 export const getDashboardStatsApi = () => {
   return axios.get("/api/v1/dashboard/stats");
@@ -73,16 +85,22 @@ export const toggleUserStatusApi = (id) => {
 };
 
 // --- Documents (Admin) ---
-export const getDocumentsApi = (status) => {
-  return axios.get(`/api/v1/documents?status=${status || ""}`);
+export const getDocumentsApi = (status, limit = 10, page = 1) => {
+  return axios.get(
+    `/api/v1/documents?status=${status || ""}&limit=${limit}&page=${page}`,
+  );
 };
 
-export const searchDocumentsApi = (query) => {
-  return axios.get(`/api/v1/documents/search?q=${query || ""}`);
+export const searchDocumentsApi = (query, limit = 12, page = 1) => {
+  return axios.get(
+    `/api/v1/documents/search?q=${query || ""}&limit=${limit}&page=${page}`,
+  );
 };
 
-export const getMyDocumentsApi = () => {
-  return axios.get("/api/v1/documents/me");
+export const getMyDocumentsApi = (status, limit = 10, page = 1) => {
+  return axios.get(
+    `/api/v1/documents/me?status=${status || ""}&limit=${limit}&page=${page}`,
+  );
 };
 
 export const toggleFavoriteApi = (id) => {
@@ -99,6 +117,14 @@ export const addRecentlyViewedApi = (id) => {
 
 export const getRecentlyViewedApi = () => {
   return axios.get("/api/v1/documents/recent");
+};
+
+export const getRecommendationsApi = (limit = 6, page = 1) => {
+  return axios.get(`/api/v1/documents/recommendations?limit=${limit}&page=${page}`);
+};
+
+export const getTrendingDocumentsApi = (limit = 10) => {
+  return axios.get(`/api/v1/documents/trending?limit=${limit}`);
 };
 
 export const getDocumentByIdApi = (id) => {
@@ -127,6 +153,23 @@ export const updateDocumentApi = (id, data) => {
 
 export const deleteDocumentApi = (id) => {
   return axios.delete(`/api/v1/documents/${id}`);
+};
+
+// --- Score Management (Admin) ---
+export const setDocumentScoreApi = (id, score, reason = "") => {
+  return axios.put(`/api/v1/documents/${id}/score`, { score, reason });
+};
+
+export const getScoreHistoryApi = (id) => {
+  return axios.get(`/api/v1/documents/${id}/score-history`);
+};
+
+export const recalculateAllScoresApi = () => {
+  return axios.post("/api/v1/documents/scores/recalculate");
+};
+
+export const getScoreAnalyticsApi = () => {
+  return axios.get("/api/v1/documents/scores/analytics");
 };
 
 // --- Categories (Admin) ---

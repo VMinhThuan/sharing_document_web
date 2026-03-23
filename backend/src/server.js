@@ -1,4 +1,9 @@
 const dotenv = require("dotenv");
+const dns = require("node:dns");
+
+// Fast fix for Node 18 internalConnectMultiple bug (ERR_INTERNAL_ASSERTION)
+dns.setDefaultResultOrder("ipv4first");
+
 // Load env vars
 dotenv.config();
 

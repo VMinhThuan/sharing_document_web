@@ -194,7 +194,7 @@ const ClientSidebar = () => {
                   <img
                     src={
                       user.avatar ||
-                      "https://lh3.googleusercontent.com/aida-public/AB6AXuAyywXwl8gB4T9Bg9qX9-leZ11D89IRurmjopEmaVLe8fb1_-XmfW1qUAPN3KTlfYeZLGrh9uOinAWO3tx9Cng6KTAzRaGPZO6ssq3XLlkWshY4TdFL5sT7304FdXjnyxvK-TQaIRgl4mIXVSqVdP7URgiFAnEZwYQsjE2ChCLfk5RkWy9766mMFa_vVjnxX4UQP02KzTlFdpcxCUh_GQw3qsS1e_soqV_xAd8Us7trwMTUApJxzEI99yqJ4z0-NIcLKFutPvmtQkg"
+                      `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName || "User")}&background=3b82f6&color=fff`
                     }
                     alt="User Avatar"
                     className="object-cover rounded-full size-10 ring-2 ring-gray-100 dark:ring-gray-700 shrink-0"

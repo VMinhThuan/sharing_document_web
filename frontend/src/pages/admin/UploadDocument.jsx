@@ -50,15 +50,12 @@ const UploadDocument = () => {
       if (values.category) {
         formData.append("category", values.category);
       }
-      if (values.score) {
-        formData.append("score", values.score);
-      }
 
       const res = await createDocumentApi(formData);
 
       if (res && res.statusCode === 201) {
         const document = res.data;
-        
+
         // Show AI analysis if available
         if (document.aiAnalysis) {
           setAiAnalysis(document.aiAnalysis);
@@ -100,7 +97,9 @@ const UploadDocument = () => {
       ].includes(file.type);
 
       if (!isValidType) {
-        message.error("Please upload PDF, Word, Excel, or PowerPoint files only");
+        message.error(
+          "Please upload PDF, Word, Excel, or PowerPoint files only",
+        );
         return Upload.LIST_IGNORE;
       }
 
@@ -131,7 +130,8 @@ const UploadDocument = () => {
           Upload Document
         </h1>
         <p className="text-gray-500">
-          Upload a document. AI will automatically analyze its content and check for policy violations.
+          Upload a document. AI will automatically analyze its content and check
+          for policy violations.
         </p>
       </div>
 
@@ -174,15 +174,6 @@ const UploadDocument = () => {
 
             <Form.Item name="category" label="Category">
               <Input placeholder="e.g., Mathematics, Science, Literature" />
-            </Form.Item>
-
-            <Form.Item name="score" label="Score (Points)">
-              <Input
-                type="number"
-                min={0}
-                placeholder="0"
-                defaultValue={0}
-              />
             </Form.Item>
 
             <Form.Item>
@@ -307,7 +298,8 @@ const UploadDocument = () => {
 
                 {aiAnalysis.analyzedAt && (
                   <p className="text-xs text-gray-500 mt-4">
-                    Analyzed at: {new Date(aiAnalysis.analyzedAt).toLocaleString()}
+                    Analyzed at:{" "}
+                    {new Date(aiAnalysis.analyzedAt).toLocaleString()}
                   </p>
                 )}
               </div>

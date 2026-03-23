@@ -48,6 +48,30 @@ router.post(
   authorize("admin", "user"),
   documentController.addRecentlyViewed,
 );
+router.get("/trending", documentController.getTrendingDocuments);
+router.get(
+  "/recommendations",
+  protect,
+  authorize("admin", "user"),
+  documentController.getRecommendations,
+);
+
+// ===== SCORE MANAGEMENT ROUTES (phải đứng TRƯỚC /:id) =====
+// Batch recalculate tất cả score (admin)
+router.post(
+  "/scores/recalculate",
+  protect,
+  authorize("admin"),
+  documentController.recalculateAllScores,
+);
+// Thống kê score toàn hệ thống (admin)
+router.get(
+  "/scores/analytics",
+  protect,
+  authorize("admin"),
+  documentController.getScoreAnalytics,
+);
+
 router.get(
   "/:id",
   protect,
@@ -93,6 +117,21 @@ router.delete(
   protect,
   authorize("admin"),
   documentController.deleteDocument,
+);
+
+// Admin set score cho document
+router.put(
+  "/:id/score",
+  protect,
+  authorize("admin"),
+  documentController.setDocumentScore,
+);
+// Xem lịch sử thay đổi score
+router.get(
+  "/:id/score-history",
+  protect,
+  authorize("admin"),
+  documentController.getScoreHistory,
 );
 
 module.exports = router;

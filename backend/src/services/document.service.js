@@ -1,12 +1,24 @@
 const Document = require("../models/document.model");
 
 // See all docs or filter by status
-const getDocuments = async (status) => {
+const getDocuments = async (status, limit = 10, page = 1) => {
+  const skip = (page - 1) * limit;
   const filter = status ? { status } : {};
-  return await Document.find(filter)
-    .populate("uploadedBy", "fullName email")
+
+  const total = await Document.countDocuments(filter);
+  const docs = await Document.find(filter)
+    .populate("uploadedBy", "fullName email avatar")
     .populate("category", "name")
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit);
+
+  return {
+    docs,
+    total,
+    page: Number(page),
+    pages: Math.ceil(total / limit),
+  };
 };
 
 const approveDocument = async (id) => {
@@ -16,7 +28,6 @@ const approveDocument = async (id) => {
     { new: true },
   );
   if (!doc) throw new Error("Document not found");
-  // Logic to add points to user could be here
   return doc;
 };
 
@@ -50,23 +61,56 @@ const getDocumentById = async (id) => {
   return await Document.findById(id).populate("category", "name");
 };
 
-const getUserDocuments = async (userId) => {
-  return await Document.find({ uploadedBy: userId })
+const getUserDocuments = async (userId, status, limit = 10, page = 1) => {
+  const skip = (page - 1) * limit;
+  const filter = { uploadedBy: userId };
+  if (status) {
+    if (typeof status === "string" && status.includes(",")) {
+      filter.status = { $in: status.split(",") };
+    } else {
+      filter.status = status;
+    }
+  }
+
+  const total = await Document.countDocuments(filter);
+  const docs = await Document.find(filter)
     .populate("category", "name")
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit);
+
+  return {
+    docs,
+    total,
+    page: Number(page),
+    pages: Math.ceil(total / limit),
+  };
 };
 
-const searchDocuments = async (query) => {
-  return await Document.find({
+const searchDocuments = async (query, limit = 10, page = 1) => {
+  const skip = (page - 1) * limit;
+  const filter = {
     status: "approved",
     $or: [
       { title: { $regex: query, $options: "i" } },
       { description: { $regex: query, $options: "i" } },
     ],
-  })
+  };
+
+  const total = await Document.countDocuments(filter);
+  const docs = await Document.find(filter)
     .populate("uploadedBy", "fullName avatar")
     .populate("category", "name")
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit);
+
+  return {
+    docs,
+    total,
+    page: Number(page),
+    pages: Math.ceil(total / limit),
+  };
 };
 
 module.exports = {

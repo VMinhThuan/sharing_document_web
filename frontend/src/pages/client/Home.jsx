@@ -5,19 +5,12 @@ import {
   getDocumentsApi,
   toggleFavoriteApi,
   getRecentlyViewedApi,
+  getRecommendationsApi,
+  getTrendingDocumentsApi,
 } from "../../services/api";
 import { Spin, message } from "antd";
-
-const formatFileType = (type) => {
-  if (!type) return "FILE";
-  const t = type.toLowerCase();
-  if (t.includes("pdf")) return "PDF";
-  if (t.includes("wordprocessingml") || t.includes("msword")) return "DOCX";
-  if (t.includes("presentationml") || t.includes("powerpoint")) return "PPTX";
-  if (t.includes("spreadsheetml") || t.includes("excel")) return "XLSX";
-  if (t.includes("image")) return "IMG";
-  return t.split("/").pop().toUpperCase().substring(0, 5);
-};
+import { formatFileType } from "../../utils/fileUtils";
+import TopHeader from "../../components/TopHeader/TopHeader";
 
 const formatTimeAgo = (date) => {
   if (!date) return "";
@@ -43,10 +36,13 @@ const Home = () => {
   const { user, isAuthenticated, refreshUser } = useAuth();
   const navigate = useNavigate();
   const [documents, setDocuments] = useState([]);
+  const [trendingDocs, setTrendingDocs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [recentDocs, setRecentDocs] = useState([]);
-  const [recentLoading, setRecentLoading] = useState(true);
+  const [trendingLoading, setTrendingLoading] = useState(true);
+  const [recentlyViewed, setRecentlyViewed] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [exploreDocs, setExploreDocs] = useState([]);
+  const [exploreLoading, setExploreLoading] = useState(true);
 
   const handleSearch = (e) => {
     if (e) e.preventDefault();
@@ -61,6 +57,52 @@ const Home = () => {
     }
   };
 
+  const fetchExploreDocs = async () => {
+    setExploreLoading(true);
+    try {
+      const res = await getDocumentsApi("approved", 10, 1);
+      if (res && res.statusCode === 200) {
+        setExploreDocs(res.data.docs || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch explore docs:", error);
+    } finally {
+      setExploreLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const fetchHomeData = async () => {
+      setLoading(true);
+      setTrendingLoading(true);
+      try {
+        const [recs, trending, recent] = await Promise.all([
+          getRecommendationsApi(10),
+          getTrendingDocumentsApi(10),
+          isAuthenticated ? getRecentlyViewedApi() : Promise.resolve({ statusCode: 200, data: [] }),
+        ]);
+
+        if (recs && recs.statusCode === 200) {
+          setDocuments(recs.data.docs || []);
+        }
+        if (trending && trending.statusCode === 200) {
+          setTrendingDocs(trending.data);
+        }
+        if (recent && recent.statusCode === 200) {
+          setRecentlyViewed(recent.data);
+        }
+      } catch (error) {
+        console.error("Home data error:", error);
+      } finally {
+        setLoading(false);
+        setTrendingLoading(false);
+      }
+    };
+
+    fetchHomeData();
+    fetchExploreDocs();
+  }, [isAuthenticated]);
+
   const handleToggleFavorite = async (e, docId) => {
     e.preventDefault();
     e.stopPropagation();
@@ -72,196 +114,259 @@ const Home = () => {
       const res = await toggleFavoriteApi(docId);
       if (res && res.statusCode === 200) {
         refreshUser(true);
-        const isFavorited = user?.favorites?.includes(docId);
-        message.success(
-          isFavorited ? "Removed from favorites" : "Added to favorites",
-        );
       }
     } catch (error) {
-      console.error("Failed to toggle favorite:", error);
-      message.error("Failed to update favorite");
+      console.error("Toggle favorite error:", error);
     }
   };
 
-  useEffect(() => {
-    const fetchHomeData = async () => {
-      setLoading(true);
-      try {
-        const res = await getDocumentsApi("approved");
-        if (res && res.statusCode === 200) {
-          // Take first 6 for home page
-          setDocuments(res.data.slice(0, 6));
-        }
-      } catch (error) {
-        console.error("Failed to fetch home documents:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchHomeData();
-  }, []);
-
-  useEffect(() => {
-    const fetchRecent = async () => {
-      if (!isAuthenticated) {
-        setRecentLoading(false);
-        return;
-      }
-      try {
-        const res = await getRecentlyViewedApi();
-        if (res && res.statusCode === 200) {
-          setRecentDocs(res.data);
-        }
-      } catch (error) {
-        console.error("Failed to fetch recent docs:", error);
-      } finally {
-        setRecentLoading(false);
-      }
-    };
-    fetchRecent();
-  }, [isAuthenticated]);
-
-  const getGreeting = () => {
-    // Vietnam Time (UTC+7)
-    const vnHour = (new Date().getUTCHours() + 7) % 24;
-    if (vnHour >= 5 && vnHour < 12) return "Good Morning";
-    if (vnHour >= 12 && vnHour < 18) return "Good Afternoon";
-    return "Good Evening";
-  };
-
   return (
-    <main className="flex-1 flex flex-col min-h-full relative">
-      {/* Mobile Header (Visible only on small screens) */}
-      <div className="lg:hidden flex items-center justify-between p-4 bg-white dark:bg-[#1a202c] border-b border-gray-200 dark:border-gray-800 z-20">
-        <div className="flex items-center gap-2">
-          <div className="text-primary bg-primary/10 p-1.5 rounded-lg">
-            <span className="material-symbols-outlined">smart_toy</span>
+    <main className="flex-1 bg-white dark:bg-background-dark min-h-full transition-colors pb-20 overflow-x-hidden relative">
+      <TopHeader title="SmartShare AI" />
+      
+      <div className="max-w-[1600px] mx-auto p-4 md:p-8 space-y-12">
+        {/* Search Header */}
+        <section className="relative h-[250px] md:h-[300px] rounded-[2.5rem] overflow-hidden bg-gradient-to-br from-[#EBF2FF] to-[#F5F9FF] dark:from-[#1e293b] dark:to-[#0f172a] p-8 md:p-12 flex flex-col justify-center transition-all">
+          <div className="relative z-10 max-w-3xl space-y-6">
+            <h1 className="text-[#111318] dark:text-white text-4xl md:text-5xl font-black tracking-tight leading-tight">
+              What do you want to <br />
+              <span className="text-primary italic font-serif">learn</span>{" "}
+              today?
+            </h1>
+            <div className="relative group max-w-2xl">
+              <span className="material-symbols-outlined absolute left-5 top-1/2 -translate-y-1/2 text-primary text-2xl group-focus-within:scale-110 transition-transform">
+                search
+              </span>
+              <input
+                type="text"
+                placeholder="Ask a question or search for 'Calculus notes'..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className="w-full pl-14 pr-6 py-5 bg-white dark:bg-gray-800 border-none rounded-3xl text-sm md:text-base text-[#111318] dark:text-white placeholder:text-slate-400 focus:ring-4 focus:ring-primary/10 transition-all shadow-xl shadow-primary/5"
+              />
+              <button 
+                onClick={handleSearch}
+                className="absolute right-3 top-1/2 -translate-y-1/2 bg-primary dark:bg-primary-dark text-white p-3 rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20"
+              >
+                <span className="material-symbols-outlined text-2xl leading-none">
+                  search
+                </span>
+              </button>
+            </div>
           </div>
-          <span className="font-bold text-lg">SmartShare AI</span>
-        </div>
-        <button className="text-gray-600 dark:text-white">
-          <span className="material-symbols-outlined">menu</span>
-        </button>
-      </div>
-      {/* Scrollable Content Area */}
-      <div className="bg-background-light dark:bg-background-dark">
-        <div className="max-w-7xl mx-auto w-full pb-10">
-          {/* Hero / Greeting Section */}
-          {user && isAuthenticated && (
-            <div className="pt-8 px-6 md:px-10 pb-2">
-              <div className="flex flex-col gap-1">
-                <h1 className="text-[#111318] dark:text-white text-3xl md:text-4xl font-extrabold leading-tight tracking-tight">
-                  {getGreeting()}, {user?.fullName} 👋
-                </h1>
-                <p className="text-[#60708a] dark:text-gray-400 text-base md:text-lg font-normal">
-                  Ready to boost your knowledge today?
-                </p>
+          <div className="absolute top-0 right-0 w-1/2 h-full hidden lg:block pointer-events-none opacity-20 dark:opacity-10">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary rounded-full blur-[120px]"></div>
+          </div>
+        </section>
+
+        <div className="xl:col-span-12 space-y-16">
+          {/* Trending Now */}
+          <section>
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded-xl">
+                  <span className="material-symbols-outlined text-2xl font-bold">
+                    local_fire_department
+                  </span>
+                </div>
+                <div>
+                  <h2 className="text-[#111318] dark:text-white text-2xl md:text-3xl font-black leading-tight">
+                    Trending Now
+                  </h2>
+                  <p className="text-sm text-slate-500 dark:text-gray-500 font-bold">
+                    Most viewed and downloaded this week
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    const el = document.getElementById("trending-carousel");
+                    if (el) el.scrollBy({ left: -350, behavior: "smooth" });
+                  }}
+                  className="w-8 h-8 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
+                >
+                  <span className="material-symbols-outlined text-sm">
+                    chevron_left
+                  </span>
+                </button>
+                <button
+                  onClick={() => {
+                    const el = document.getElementById("trending-carousel");
+                    if (el) el.scrollBy({ left: 350, behavior: "smooth" });
+                  }}
+                  className="w-8 h-8 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
+                >
+                  <span className="material-symbols-outlined text-sm">
+                    chevron_right
+                  </span>
+                </button>
               </div>
             </div>
-          )}
-          {/* Search Section */}
-          <div className="px-6 md:px-10 py-6 sticky top-0 z-10 backdrop-blur-md bg-background-light/80 dark:bg-background-dark/80 transition-all duration-300">
-            <div className="max-w-3xl">
-              <label className="group flex flex-col w-full relative shadow-sm transition-all focus-within:shadow-md rounded-xl">
-                <div className="flex w-full items-stretch rounded-xl h-14 bg-white dark:bg-[#1a202c] border border-gray-200 dark:border-gray-700 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary overflow-hidden">
-                  <div className="text-primary flex items-center justify-center pl-4 pr-2">
-                    <span className="material-symbols-outlined animate-pulse">
-                      colors_spark
+
+            <div
+              id="trending-carousel"
+              className="flex gap-6 pb-6 overflow-x-auto scrollbar-hide snap-x snap-mandatory"
+              style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+            >
+              {trendingLoading ? (
+                Array(4).fill(0).map((_, i) => (
+                  <div key={i} className="flex-shrink-0 w-[280px] h-[300px] bg-gray-100 dark:bg-gray-800 rounded-[2.5rem] animate-pulse" />
+                ))
+              ) : trendingDocs.length > 0 ? (
+                trendingDocs.map((doc, idx) => (
+                  <Link
+                    key={doc._id}
+                    to={`/documents/${doc._id}`}
+                    className="group relative flex-shrink-0 w-[240px] md:w-[280px] bg-white dark:bg-[#1a202c] rounded-[2rem] overflow-hidden border border-slate-100 dark:border-gray-800 p-3 hover:shadow-2xl transition-all duration-500 snap-start"
+                  >
+                    <div className="relative aspect-[4/3] rounded-[1.5rem] overflow-hidden bg-slate-100 dark:bg-slate-800 flex items-center justify-center shadow-inner">
+                      <div className="absolute top-3 left-3 z-10 size-8 bg-white/90 dark:bg-black/60 backdrop-blur-md rounded-full flex items-center justify-center text-xs font-black shadow-lg">
+                        #{idx + 1}
+                      </div>
+                      {doc.fileType?.toLowerCase().includes("pdf") ? (
+                        <span className="material-symbols-outlined text-4xl text-red-500/40">
+                          picture_as_pdf
+                        </span>
+                      ) : doc.fileType?.toLowerCase().includes("image") ? (
+                        <img
+                          src={doc.fileUrl}
+                          className="w-full h-full object-cover"
+                          alt=""
+                        />
+                      ) : (
+                        <span className="material-symbols-outlined text-4xl text-blue-500/40">
+                          description
+                        </span>
+                      )}
+                    </div>
+                    <div className="p-3 space-y-2">
+                      <h3 className="font-extrabold text-[#111318] dark:text-white line-clamp-1 group-hover:text-primary transition-colors">
+                        {doc.title}
+                      </h3>
+                      <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-gray-400 font-bold uppercase tracking-widest">
+                        <span>{doc.views} views</span>
+                        <span className="text-primary font-black">
+                          {formatFileType(doc.fileType)}
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+                ))
+              ) : (
+                <div className="w-full py-10 text-center text-gray-500">
+                  No trending documents yet.
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* AI Recommendations */}
+          {isAuthenticated && (
+            <section>
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-primary dark:bg-primary-dark text-white rounded-[1.25rem] shadow-lg shadow-primary/20 animate-pulse">
+                    <span className="material-symbols-outlined text-2xl font-black">
+                      auto_awesome
                     </span>
                   </div>
-                  <input
-                    className="flex w-full min-w-0 flex-1 resize-none bg-transparent border-none focus:ring-0 text-[#111318] dark:text-white placeholder:text-[#60708a] px-2 text-base font-normal leading-normal h-full"
-                    placeholder="Ask a question or search for 'Calculus notes'..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                  />
-                  <div className="flex items-center pr-2">
-                    <button
-                      onClick={handleSearch}
-                      className="bg-primary hover:bg-blue-600 text-white p-2 rounded-lg transition-colors flex items-center justify-center"
-                    >
-                      <span className="material-symbols-outlined">search</span>
-                    </button>
+                  <div>
+                    <h2 className="text-[#111318] dark:text-white text-2xl md:text-3xl font-black leading-tight flex items-center gap-3">
+                      AI Picks For You
+                    </h2>
+                    <p className="text-sm text-slate-500 dark:text-gray-500 font-bold">
+                      Personalized materials based on your interests
+                    </p>
                   </div>
                 </div>
-              </label>
-            </div>
-          </div>
-          {/* Content Grid */}
-          <div className="flex flex-col gap-10 px-6 md:px-10">
-            {/* AI Picks Section */}
-            <section>
-              <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-2">
-                  <span
-                    className="material-symbols-outlined text-primary"
-                    style={{ fontVariationSettings: "'FILL' 1" }}
+                  <button
+                    onClick={() => {
+                      const el = document.getElementById("ai-picks-carousel");
+                      if (el) el.scrollBy({ left: -350, behavior: "smooth" });
+                    }}
+                    className="w-8 h-8 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
                   >
-                    auto_awesome
-                  </span>
-                  <h2 className="text-[#111318] dark:text-white text-xl md:text-2xl font-bold leading-tight">
-                    AI Picks For You
-                  </h2>
+                    <span className="material-symbols-outlined text-sm">
+                      chevron_left
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      const el = document.getElementById("ai-picks-carousel");
+                      if (el) el.scrollBy({ left: 350, behavior: "smooth" });
+                    }}
+                    className="w-8 h-8 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
+                  >
+                    <span className="material-symbols-outlined text-sm">
+                      chevron_right
+                    </span>
+                  </button>
+                  <Link
+                    className="text-sm font-semibold text-primary hover:text-blue-600 flex items-center gap-1 group ml-2"
+                    to="/ai-suggest-for-you"
+                  >
+                    View All
+                    <span className="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">
+                      arrow_forward
+                    </span>
+                  </Link>
                 </div>
-                <Link
-                  className="text-sm font-semibold text-primary hover:text-blue-600 flex items-center gap-1 group"
-                  to="/documents"
-                >
-                  View All
-                  <span className="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">
-                    arrow_forward
-                  </span>
-                </Link>
               </div>
 
               {loading ? (
-                <div className="flex justify-center py-10">
-                  <Spin />
+                <div className="flex gap-5 overflow-hidden">
+                  {Array(4).fill(0).map((_, i) => (
+                    <div key={i} className="flex-shrink-0 w-[320px] h-[300px] bg-gray-100 dark:bg-gray-800 rounded-[2.8rem] animate-pulse" />
+                  ))}
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                <div
+                  id="ai-picks-carousel"
+                  className="flex gap-5 pb-3 overflow-x-auto scrollbar-hide snap-x snap-mandatory"
+                  style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+                >
                   {documents.length > 0 ? (
                     documents.map((doc) => (
                       <Link
                         key={doc._id}
                         to={`/documents/${doc._id}`}
-                        className="group bg-white dark:bg-[#1a202c] rounded-2xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col gap-3"
+                        className="group bg-white dark:bg-[#1a202c] rounded-[2rem] border border-gray-200 dark:border-gray-800 p-4 shadow-sm hover:shadow-lg transition-all cursor-pointer flex flex-col gap-3 flex-shrink-0 w-[320px] snap-start"
                       >
                         <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                          <div className="absolute top-3 right-3 bg-white/90 dark:bg-black/80 backdrop-blur text-xs font-bold px-2 py-1 rounded-md text-primary shadow-sm z-10 flex items-center gap-1">
-                            <span className="material-symbols-outlined text-[14px]">
-                              thumb_up
-                            </span>
-                            98% Match
-                          </div>
+                          {doc._matchPercentage && (
+                            <div className="absolute top-3 right-3 bg-white/90 dark:bg-black/80 backdrop-blur text-xs font-bold px-2 py-1 rounded-md text-primary shadow-sm z-10 flex items-center gap-1">
+                              <span className="material-symbols-outlined text-[14px]">
+                                thumb_up
+                              </span>
+                              {doc._matchPercentage}% Match
+                            </div>
+                          )}
                           {doc.fileType?.toLowerCase().includes("pdf") ? (
                             <span className="material-symbols-outlined text-4xl text-red-500/40 opacity-50">
                               picture_as_pdf
                             </span>
-                          ) : doc.fileType?.toLowerCase().includes("image") ||
-                            ["jpg", "jpeg", "png"].some((ext) =>
-                              doc.fileType?.toLowerCase().includes(ext),
-                            ) ? (
+                          ) : doc.fileType?.toLowerCase().includes("image") ? (
                             <img
                               src={doc.fileUrl}
                               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                               alt={doc.title}
                             />
                           ) : (
-                            <span className="material-symbols-outlined text-4xl text-blue-500/40 opacity-50">
+                            <span className="material-symbols-outlined text-4xl text-blue-500/40 opacity-50 text-[50px]">
                               description
                             </span>
                           )}
                         </div>
                         <div className="flex flex-col gap-1">
                           <div className="flex justify-between items-start">
-                            <h3 className="font-bold text-lg text-gray-900 dark:text-white group-hover:text-primary transition-colors line-clamp-1">
+                            <h3 className="font-bold text-base text-gray-900 dark:text-white group-hover:text-primary transition-colors line-clamp-1">
                               {doc.title}
                             </h3>
                             <span
-                              className={`material-symbols-outlined transition-colors cursor-pointer ${
+                              className={`material-symbols-outlined transition-colors cursor-pointer flex-shrink-0 ml-2 ${
                                 user?.favorites?.includes(doc._id)
                                   ? "text-red-500"
                                   : "text-gray-400 hover:text-red-500"
@@ -274,166 +379,196 @@ const Home = () => {
                               favorite
                             </span>
                           </div>
-                          <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">
+                          <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
                             {doc.description ||
                               "Browse through high-quality study materials tailored for your subjects."}
                           </p>
                         </div>
-                        <div className="flex items-center justify-between mt-auto pt-2 border-t border-gray-100 dark:border-gray-800 gap-3">
-                          <div className="flex items-center gap-2 overflow-hidden min-w-0 flex-1">
-                            <div className="bg-primary/10 rounded-full size-6 flex items-center justify-center text-[10px] font-bold text-primary shrink-0">
-                              {doc.uploadedBy?.fullName?.charAt(0) || "U"}
-                            </div>
-                            <span className="text-xs font-medium text-gray-600 dark:text-gray-300 truncate">
-                              {doc.uploadedBy?.fullName || "Anonymous"}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-3 text-gray-400 text-xs shrink-0">
-                            <span className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-gray-600 dark:text-gray-300 font-bold uppercase">
-                              {formatFileType(doc.fileType)}
-                            </span>
-                          </div>
-                        </div>
                       </Link>
                     ))
                   ) : (
-                    <div className="col-span-full py-10 text-center text-gray-500">
-                      No documents recommended yet.
+                    <div className="w-full py-10 text-center text-gray-500 font-medium bg-white/50 dark:bg-gray-800/30 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700">
+                      Update your Preferences to get AI recommendations!
                     </div>
                   )}
                 </div>
               )}
             </section>
-            {/* Trending Topics Section */}
-            <section>
-              <h2 className="text-[#111318] dark:text-white text-xl font-bold leading-tight mb-5 px-1">
-                🔥 Trending Topics
+          )}
+
+          {/* Explore Mode - Documents Carousel */}
+          <section className="mt-4">
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-xl">
+                  <span className="material-symbols-outlined text-2xl font-bold">
+                    grid_view
+                  </span>
+                </div>
+                <div>
+                  <h2 className="text-[#111318] dark:text-white text-2xl md:text-3xl font-black leading-tight">
+                    Explore Topics
+                  </h2>
+                  <p className="text-sm text-slate-500 dark:text-gray-500 font-bold">
+                    Newest documents for you to discover
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    const el = document.getElementById("topics-carousel");
+                    if (el) el.scrollBy({ left: -350, behavior: "smooth" });
+                  }}
+                  className="w-8 h-8 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
+                >
+                  <span className="material-symbols-outlined text-sm">
+                    chevron_left
+                  </span>
+                </button>
+                <button
+                  onClick={() => {
+                    const el = document.getElementById("topics-carousel");
+                    if (el) el.scrollBy({ left: 350, behavior: "smooth" });
+                  }}
+                  className="w-8 h-8 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
+                >
+                  <span className="material-symbols-outlined text-sm">
+                    chevron_right
+                  </span>
+                </button>
+                <Link
+                  className="text-sm font-semibold text-primary hover:text-blue-600 flex items-center gap-1 group ml-2"
+                  to="/documents"
+                >
+                  View All
+                  <span className="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">
+                    arrow_forward
+                  </span>
+                </Link>
+              </div>
+            </div>
+
+            {exploreLoading ? (
+              <div className="flex gap-4 overflow-hidden">
+                {Array(6).fill(0).map((_, i) => (
+                  <div key={i} className="w-[240px] md:w-[300px] h-[350px] bg-slate-100 dark:bg-slate-800/50 rounded-[2rem] animate-pulse shrink-0" />
+                ))}
+              </div>
+            ) : (
+              <div
+                id="topics-carousel"
+                className="flex gap-6 pb-6 overflow-x-auto scrollbar-hide snap-x snap-mandatory"
+                style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+              >
+                {exploreDocs.length > 0 ? (
+                  exploreDocs.map((doc) => (
+                    <Link
+                      key={doc._id}
+                      to={`/documents/${doc._id}`}
+                      className="group relative flex flex-col bg-white dark:bg-[#1a202c] p-4 rounded-[2rem] border border-slate-100 dark:border-gray-800/50 hover:border-indigo-400 dark:hover:border-indigo-500/50 shadow-sm hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-500 flex-shrink-0 w-[240px] md:w-[300px] snap-start"
+                    >
+                       <div className="relative aspect-video rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4">
+                          {doc.fileType?.toLowerCase().includes("pdf") ? (
+                            <span className="material-symbols-outlined text-4xl text-red-500/40">
+                              picture_as_pdf
+                            </span>
+                          ) : doc.fileType?.toLowerCase().includes("image") ? (
+                            <img src={doc.fileUrl} className="w-full h-full object-cover transition-transform group-hover:scale-110" alt="" />
+                          ) : (
+                            <span className="material-symbols-outlined text-4xl text-blue-500/40">
+                              article
+                            </span>
+                          )}
+                          <div className="absolute top-3 left-3 px-2 py-0.5 rounded-lg bg-white/90 dark:bg-black/60 backdrop-blur text-[9px] font-black text-primary uppercase tracking-widest">
+                             {formatFileType(doc.fileType)}
+                          </div>
+                       </div>
+                      <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 line-clamp-1 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors mb-1">
+                        {doc.title}
+                      </h3>
+                      <p className="text-[11px] text-slate-500 dark:text-gray-500 line-clamp-2 min-h-[32px] mb-3 leading-relaxed">
+                        {doc.description || "Explore this valuable resource shared by the student community."}
+                      </p>
+                      <div className="mt-auto pt-3 border-t border-slate-50 dark:border-gray-800 flex items-center justify-between">
+                         <div className="flex items-center gap-2">
+                           <div className="size-5 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-[9px] font-bold text-indigo-600">
+                              {doc.uploadedBy?.fullName?.charAt(0) || "U"}
+                           </div>
+                           <span className="text-[10px] font-bold text-slate-600 dark:text-gray-400 truncate max-w-[80px]">
+                             {doc.uploadedBy?.fullName || "Anonymous"}
+                           </span>
+                         </div>
+                         <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400">
+                            <span className="material-symbols-outlined text-[14px]">visibility</span>
+                            {doc.views || 0}
+                         </div>
+                      </div>
+                    </Link>
+                  ))
+                ) : (
+                  <div className="w-full py-10 text-center text-gray-500">
+                     No documents discovered yet.
+                  </div>
+                )}
+              </div>
+            )}
+          </section>
+
+          {/* Recently Viewed */}
+          {isAuthenticated && recentlyViewed.length > 0 && (
+            <section className="mt-4">
+              <h2 className="text-[#111318] dark:text-white text-xl font-black mb-6">
+                Recently Viewed
               </h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <a
-                  className="group relative flex flex-col justify-end h-32 p-4 rounded-xl overflow-hidden bg-gradient-to-br from-blue-500 to-blue-700 text-white shadow-md hover:shadow-lg transition-all hover:-translate-y-1"
-                  href="#"
-                >
-                  <div className="absolute top-0 right-0 p-3 opacity-20 group-hover:opacity-30 transition-opacity">
-                    <span className="material-symbols-outlined text-[64px]">
-                      school
-                    </span>
-                  </div>
-                  <p className="font-bold text-lg relative z-10">Finals Prep</p>
-                  <p className="text-xs text-blue-100 relative z-10">
-                    450+ docs
-                  </p>
-                </a>
-                <a
-                  className="group relative flex flex-col justify-end h-32 p-4 rounded-xl overflow-hidden bg-gradient-to-br from-purple-500 to-purple-700 text-white shadow-md hover:shadow-lg transition-all hover:-translate-y-1"
-                  href="#"
-                >
-                  <div className="absolute top-0 right-0 p-3 opacity-20 group-hover:opacity-30 transition-opacity">
-                    <span className="material-symbols-outlined text-[64px]">
-                      code
-                    </span>
-                  </div>
-                  <p className="font-bold text-lg relative z-10">Python</p>
-                  <p className="text-xs text-purple-100 relative z-10">
-                    320+ docs
-                  </p>
-                </a>
-                <a
-                  className="group relative flex flex-col justify-end h-32 p-4 rounded-xl overflow-hidden bg-gradient-to-br from-emerald-500 to-emerald-700 text-white shadow-md hover:shadow-lg transition-all hover:-translate-y-1"
-                  href="#"
-                >
-                  <div className="absolute top-0 right-0 p-3 opacity-20 group-hover:opacity-30 transition-opacity">
-                    <span className="material-symbols-outlined text-[64px]">
-                      psychology
-                    </span>
-                  </div>
-                  <p className="font-bold text-lg relative z-10">Psychology</p>
-                  <p className="text-xs text-emerald-100 relative z-10">
-                    180+ docs
-                  </p>
-                </a>
-                <a
-                  className="group relative flex flex-col justify-end h-32 p-4 rounded-xl overflow-hidden bg-gradient-to-br from-orange-400 to-orange-600 text-white shadow-md hover:shadow-lg transition-all hover:-translate-y-1"
-                  href="#"
-                >
-                  <div className="absolute top-0 right-0 p-3 opacity-20 group-hover:opacity-30 transition-opacity">
-                    <span className="material-symbols-outlined text-[64px]">
-                      history_edu
-                    </span>
-                  </div>
-                  <p className="font-bold text-lg relative z-10">History 101</p>
-                  <p className="text-xs text-orange-100 relative z-10">
-                    210+ docs
-                  </p>
-                </a>
+
+              <div className="flex flex-col gap-3">
+                {recentlyViewed.slice(0, 5).map((item) => {
+                  const doc = item.document;
+                  if (!doc) return null;
+                  return (
+                    <Link
+                      key={doc._id}
+                      to={`/documents/${doc._id}`}
+                      className="group flex items-center bg-white dark:bg-[#1a202c] p-4 rounded-2xl border border-slate-100 dark:border-gray-800 hover:border-primary transition-all duration-300"
+                    >
+                      {/* Icon */}
+                      <div
+                        className={`size-12 rounded-xl flex items-center justify-center shrink-0 ${
+                          doc.fileType?.toLowerCase().includes("pdf")
+                            ? "bg-red-50 text-red-500"
+                            : "bg-blue-50 text-blue-500"
+                        }`}
+                      >
+                        <span className="material-symbols-outlined text-2xl">
+                          {doc.fileType?.toLowerCase().includes("pdf")
+                            ? "picture_as_pdf"
+                            : "article"}
+                        </span>
+                      </div>
+
+                      {/* Info */}
+                      <div className="ml-4 flex-1 min-w-0">
+                        <h3 className="font-bold text-[#111318] dark:text-white text-sm truncate group-hover:text-primary transition-colors">
+                          {doc.title}
+                        </h3>
+                        <p className="text-[11px] text-slate-400 mt-0.5">
+                          Viewed {formatTimeAgo(item.viewedAt)} • {formatSize(doc.size)}
+                        </p>
+                      </div>
+
+                      {/* Category Tag */}
+                      <div className="ml-4 shrink-0">
+                        <span className="px-3 py-1 bg-slate-100 dark:bg-gray-800 text-slate-500 dark:text-gray-400 text-[10px] font-bold rounded-lg uppercase tracking-wider">
+                          {typeof doc.category === "object" ? doc.category?.name : "General"}
+                        </span>
+                      </div>
+                    </Link>
+                  );
+                })}
               </div>
             </section>
-            {/* Recently Viewed (List View) */}
-            {isAuthenticated && recentDocs.length > 0 && (
-              <section>
-                <div className="flex items-center justify-between mb-4 px-1">
-                  <h2 className="text-[#111318] dark:text-white text-xl font-bold leading-tight">
-                    Recently Viewed
-                  </h2>
-                </div>
-                <div className="bg-white dark:bg-[#1a202c] rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
-                  {recentLoading ? (
-                    <div className="p-10 flex justify-center">
-                      <Spin />
-                    </div>
-                  ) : (
-                    recentDocs.map((item, index) => {
-                      const doc = item.document;
-                      if (!doc) return null;
-                      return (
-                        <Link
-                          key={doc._id}
-                          to={`/documents/${doc._id}`}
-                          className={`p-4 flex items-center gap-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer group ${
-                            index !== recentDocs.length - 1
-                              ? "border-b border-gray-100 dark:border-gray-800"
-                              : ""
-                          }`}
-                        >
-                          <div
-                            className={`size-10 rounded-lg flex items-center justify-center ${
-                              doc.fileType?.toLowerCase().includes("pdf")
-                                ? "bg-red-50 dark:bg-red-900/20 text-red-500"
-                                : doc.fileType?.toLowerCase().includes("image")
-                                  ? "bg-blue-50 dark:bg-blue-900/20 text-blue-500"
-                                  : "bg-primary/5 dark:bg-primary/10 text-primary"
-                            }`}
-                          >
-                            <span className="material-symbols-outlined">
-                              {doc.fileType?.toLowerCase().includes("pdf")
-                                ? "picture_as_pdf"
-                                : doc.fileType?.toLowerCase().includes("image")
-                                  ? "image"
-                                  : "article"}
-                            </span>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h4 className="text-sm font-bold text-gray-900 dark:text-white group-hover:text-primary transition-colors truncate">
-                              {doc.title}
-                            </h4>
-                            <p className="text-[11px] text-gray-500 font-medium">
-                              Viewed {formatTimeAgo(item.viewedAt)} •{" "}
-                              {formatSize(doc.size)}
-                            </p>
-                          </div>
-                          <div className="hidden md:block text-[10px] font-bold px-2 py-0.5 bg-gray-100 dark:bg-gray-700/50 rounded-full text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-600">
-                            {typeof doc.category === "object"
-                              ? doc.category?.name
-                              : "General"}
-                          </div>
-                        </Link>
-                      );
-                    })
-                  )}
-                </div>
-              </section>
-            )}
-          </div>
+          )}
         </div>
       </div>
     </main>

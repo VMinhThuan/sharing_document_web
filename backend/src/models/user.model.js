@@ -57,6 +57,11 @@ const userSchema = new mongoose.Schema({
   lastLogin: {
     type: Date,
   },
+  theme: {
+    type: String,
+    enum: ["light", "dark", "system"],
+    default: "system",
+  },
   interests: [
     {
       type: mongoose.Schema.Types.ObjectId,

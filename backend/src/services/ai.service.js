@@ -23,31 +23,32 @@ const analyzeDocument = async (documentText) => {
         ? documentText.substring(0, maxTextLength) + "..."
         : documentText;
 
-    const systemPrompt = `You are an AI assistant that analyzes educational documents. Your task is to:
-1. Provide a concise summary of the document content (2-3 sentences)
-2. Identify the main topics and subjects covered
-3. Check if the document violates community policies
+    const systemPrompt = `You are an AI assistant specializing in analyzing educational documents. Your task is to:
+1. Provide a concise summary of the document content (2-3 sentences).
+2. Identify core topics and the subject matter mentioned.
+3. Check if the document violates community policies.
 
-Community Policy Violations to check for:
-- Hate speech, discrimination, or offensive content
-- Illegal activities or instructions
-- Copyright infringement or plagiarism
-- Inappropriate or adult content
-- Misinformation or false information
-- Spam or promotional content unrelated to education
+Community policy violations to check for (Pay close attention to Vietnamese profanity and sensitive content):
+- Hate speech, discrimination, offensive, vulgar, or profane content.
+- Illegal activities or instructions.
+- Copyright violation or plagiarism.
+- Age-inappropriate content for students, adult content.
+- Misinformation or misleading content.
+- Spam or irrelevant non-educational content.
 
-Respond in JSON format with the following structure:
+Please respond in JSON format ONLY with the following structure:
 {
-  "summary": "Brief summary of the document content",
-  "topics": ["topic1", "topic2", "topic3"],
+  "summary": "Brief summary of the document in English",
+  "topics": ["topic 1", "topic 2", "topic 3"],
   "policyViolation": {
     "hasViolation": false,
     "violationType": null,
-    "reason": null
+    "reason": "Explain reason in English if violation occurs"
   },
   "isEducational": true,
-  "recommendedCategory": "suggested category name"
-}`;
+  "recommendedCategory": "category name"
+}
+Ensure all text fields are in English.`;
 
     const completion = await groq.chat.completions.create({
       messages: [

@@ -5,6 +5,7 @@ import {
   Navigate,
 } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
 import AdminRoute from "./components/ProtectedRoute/AdminRoute";
 import GuestRoute from "./components/ProtectedRoute/GuestRoute";
 import UserRoute from "./components/ProtectedRoute/UserRoute";
@@ -30,6 +31,7 @@ import LibraryDetail from "./pages/client/LibraryDetail";
 import ExploreDocs from "./pages/client/ExploreDocs";
 import ExploreDocsDetail from "./pages/client/ExploreDocsDetail";
 import Search from "./pages/client/Search";
+import AISuggestions from "./pages/client/AISuggestions";
 
 // Auth & Error Pages
 import Login from "./pages/auth/Login";
@@ -43,56 +45,59 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <Routes>
-          {/* Public Routes restricted for authenticated users */}
-          <Route element={<GuestRoute />}>
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password/:token" element={<ResetPassword />} />
-          </Route>
-
-          <Route path="/404" element={<NotFound />} />
-          <Route path="/403" element={<Forbidden />} />
-
-          {/* Admin Routes (Protected) */}
-          <Route path="/admin" element={<AdminRoute />}>
-            <Route element={<AdminLayout />}>
-              <Route
-                index
-                element={<Navigate to="/admin/analytics" replace />}
-              />
-              <Route path="analytics" element={<Analytics />} />
-              <Route path="documents" element={<Documents />} />
-              <Route path="comments" element={<Comments />} />
-              <Route path="documents/:id" element={<ExploreDocsDetail />} />
-              <Route path="categories" element={<Categories />} />
-              <Route path="upload" element={<UploadDocument />} />
-              <Route path="users" element={<Users />} />
+        <ThemeProvider>
+          <Routes>
+            {/* Public Routes restricted for authenticated users */}
+            <Route element={<GuestRoute />}>
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password/:token" element={<ResetPassword />} />
             </Route>
-          </Route>
 
-          {/* Client Routes */}
-          <Route element={<ClientLayout />}>
-            <Route path="/" element={<Home />} />
-            <Route path="/documents" element={<ExploreDocs />} />
-            <Route path="/search" element={<Search />} />
-            <Route path="/documents/:id" element={<ExploreDocsDetail />} />
-            <Route path="/help-center" element={<HelpCenter />} />
+            <Route path="/404" element={<NotFound />} />
+            <Route path="/403" element={<Forbidden />} />
 
-            {/* Private Client Routes */}
-            <Route element={<UserRoute />}>
-              <Route path="/library" element={<Library />} />
-              <Route path="/library/:id" element={<LibraryDetail />} />
-              <Route path="/uploads" element={<Uploads />} />
-              <Route path="/favorites" element={<Favorites />} />
-              <Route path="/preferences" element={<Preferences />} />
+            {/* Admin Routes (Protected) */}
+            <Route path="/admin" element={<AdminRoute />}>
+              <Route element={<AdminLayout />}>
+                <Route
+                  index
+                  element={<Navigate to="/admin/analytics" replace />}
+                />
+                <Route path="analytics" element={<Analytics />} />
+                <Route path="documents" element={<Documents />} />
+                <Route path="comments" element={<Comments />} />
+                <Route path="documents/:id" element={<ExploreDocsDetail />} />
+                <Route path="categories" element={<Categories />} />
+                <Route path="upload" element={<UploadDocument />} />
+                <Route path="users" element={<Users />} />
+              </Route>
             </Route>
-          </Route>
 
-          {/* Catch-all for 404 */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+            {/* Client Routes */}
+            <Route element={<ClientLayout />}>
+              <Route path="/" element={<Home />} />
+              <Route path="/documents" element={<ExploreDocs />} />
+              <Route path="/search" element={<Search />} />
+              <Route path="/documents/:id" element={<ExploreDocsDetail />} />
+              <Route path="/help-center" element={<HelpCenter />} />
+
+              {/* Private Client Routes */}
+              <Route element={<UserRoute />}>
+                <Route path="/library" element={<Library />} />
+                <Route path="/library/:id" element={<LibraryDetail />} />
+                <Route path="/uploads" element={<Uploads />} />
+                <Route path="/favorites" element={<Favorites />} />
+                <Route path="/preferences" element={<Preferences />} />
+                <Route path="/ai-suggest-for-you" element={<AISuggestions />} />
+              </Route>
+            </Route>
+
+            {/* Catch-all for 404 */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </ThemeProvider>
       </AuthProvider>
     </Router>
   );

@@ -55,10 +55,22 @@ const changePasswordSchema = Joi.object({
   }),
 });
 
+const updateProfileSchema = Joi.object({
+  fullName: Joi.string().trim().messages({
+    "string.empty": "Full name cannot be empty",
+  }),
+  phoneNumber: Joi.string().allow("").optional(),
+  bio: Joi.string().allow("").max(500).optional(),
+  avatar: Joi.string().allow("").optional(),
+  theme: Joi.string().valid("light", "dark", "system").optional(),
+  interests: Joi.array().items(Joi.string()).optional(),
+});
+
 module.exports = {
   registerSchema,
   loginSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
   changePasswordSchema,
+  updateProfileSchema,
 };

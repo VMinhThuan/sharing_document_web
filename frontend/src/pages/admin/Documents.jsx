@@ -7,6 +7,9 @@ import {
   createDocumentApi,
   updateDocumentApi,
   getCategoriesApi,
+  setDocumentScoreApi,
+  getScoreHistoryApi,
+  recalculateAllScoresApi,
 } from "../../services/api";
 import {
   Table,
@@ -117,6 +120,9 @@ const Documents = () => {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("");
   const [searchText, setSearchText] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalDocs, setTotalDocs] = useState(0);
+  const pageSize = 10;
 
   // Categories State
   const [categories, setCategories] = useState([]);
@@ -131,15 +137,24 @@ const Documents = () => {
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [viewingDoc, setViewingDoc] = useState(null);
 
+  // Score Modal State
+  const [scoreModalOpen, setScoreModalOpen] = useState(false);
+  const [scoringDoc, setScoringDoc] = useState(null);
+  const [scoreForm] = Form.useForm();
+  const [scoreHistory, setScoreHistory] = useState([]);
+  const [scoreLoading, setScoreLoading] = useState(false);
+  const [recalculating, setRecalculating] = useState(false);
+
   // Auto focus ref
   const titleInputRef = useRef(null);
 
-  const fetchDocuments = async (status = "") => {
+  const fetchDocuments = async (status = "", page = 1) => {
     setLoading(true);
     try {
-      const res = await getDocumentsApi(status);
+      const res = await getDocumentsApi(status, pageSize, page);
       if (res && res.statusCode === 200) {
-        setDocuments(res.data);
+        setDocuments(res.data.docs || []);
+        setTotalDocs(res.data.total || 0);
       }
     } catch (error) {
       console.error("Failed to fetch documents", error);
@@ -161,9 +176,9 @@ const Documents = () => {
   };
 
   useEffect(() => {
-    fetchDocuments(filter);
+    fetchDocuments(filter, currentPage);
     fetchCategories();
-  }, [filter]);
+  }, [filter, currentPage]);
 
   // Focus input when modal opens
   useEffect(() => {
@@ -173,6 +188,61 @@ const Documents = () => {
       }, 100);
     }
   }, [isModalOpen]);
+
+  // ===== SCORE MANAGEMENT HANDLERS =====
+  const handleSetScore = (record) => {
+    setScoringDoc(record);
+    scoreForm.setFieldsValue({ score: record.score || 0, reason: "" });
+    setScoreHistory([]);
+    setScoreModalOpen(true);
+
+    // Fetch score history
+    getScoreHistoryApi(record._id)
+      .then((res) => {
+        if (res && res.statusCode === 200) {
+          setScoreHistory(res.data.scoreHistory || []);
+        }
+      })
+      .catch(() => {});
+  };
+
+  const handleScoreSubmit = async () => {
+    try {
+      const values = await scoreForm.validateFields();
+      setScoreLoading(true);
+      const res = await setDocumentScoreApi(
+        scoringDoc._id,
+        values.score,
+        values.reason || "",
+      );
+      if (res && res.statusCode === 200) {
+        message.success("Score updated successfully");
+        setScoreModalOpen(false);
+        fetchDocuments(filter, currentPage);
+      } else {
+        message.error("Failed to update score");
+      }
+    } catch (error) {
+      console.error("Score update failed:", error);
+    } finally {
+      setScoreLoading(false);
+    }
+  };
+
+  const handleRecalculateAll = async () => {
+    setRecalculating(true);
+    try {
+      const res = await recalculateAllScoresApi();
+      if (res && res.statusCode === 200) {
+        message.success(`Recalculated scores for ${res.data.length} documents`);
+        fetchDocuments(filter, currentPage);
+      }
+    } catch (error) {
+      message.error("Failed to recalculate scores");
+    } finally {
+      setRecalculating(false);
+    }
+  };
 
   // View Document Logic
   const handleViewDocument = (doc) => {
@@ -184,7 +254,7 @@ const Documents = () => {
     try {
       await approveDocumentApi(id);
       message.success("Document approved successfully");
-      fetchDocuments(filter);
+      fetchDocuments(filter, currentPage);
     } catch (error) {
       message.error("Failed to approve document");
     }
@@ -194,7 +264,7 @@ const Documents = () => {
     try {
       await rejectDocumentApi(id);
       message.success("Document rejected");
-      fetchDocuments(filter);
+      fetchDocuments(filter, currentPage);
     } catch (error) {
       message.error("Failed to reject document");
     }
@@ -204,7 +274,7 @@ const Documents = () => {
     try {
       await deleteDocumentApi(id);
       message.success("Document deleted successfully");
-      fetchDocuments(filter);
+      fetchDocuments(filter, currentPage);
     } catch (error) {
       message.error("Failed to delete document");
     }
@@ -228,7 +298,6 @@ const Documents = () => {
       title: record.title,
       description: record.description,
       category: catValue,
-      score: record.score,
       status: record.status,
     });
     setIsModalOpen(true);
@@ -245,7 +314,7 @@ const Documents = () => {
         if (res && res.statusCode === 200) {
           message.success("Document updated successfully");
           setIsModalOpen(false);
-          fetchDocuments(filter);
+          fetchDocuments(filter, currentPage);
         } else {
           message.error(res?.message || "Failed to update document");
         }
@@ -255,7 +324,6 @@ const Documents = () => {
         formData.append("title", values.title);
         formData.append("description", values.description);
         formData.append("category", values.category || "");
-        formData.append("score", values.score || 0);
 
         if (values.file && values.file.fileList.length > 0) {
           formData.append("file", values.file.fileList[0].originFileObj);
@@ -269,7 +337,7 @@ const Documents = () => {
         if (res && res.statusCode === 201) {
           message.success("Document created successfully");
           setIsModalOpen(false);
-          fetchDocuments(filter);
+          fetchDocuments(filter, currentPage);
         } else {
           message.error(res?.message || "Failed to create document");
         }
@@ -483,9 +551,40 @@ const Documents = () => {
       },
       {
         title: "Score",
-        dataIndex: "score",
         key: "score",
-        render: (score) => <Tag color="blue">{score}</Tag>,
+        width: 160,
+        render: (_, record) => (
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-1">
+              <Tag color="green" className="text-[10px]">
+                Dynamic:{" "}
+                {record.dynamicScore?.totalDynamicScore?.toFixed(1) || 0}
+              </Tag>
+            </div>
+            {(record.score || 0) !== 0 && (
+              <div className="flex items-center gap-1">
+                <Tag
+                  color={record.score > 0 ? "blue" : "red"}
+                  className="text-[10px]"
+                >
+                  Adjust: {record.score > 0 ? "+" : ""}
+                  {record.score}
+                </Tag>
+              </div>
+            )}
+            <Button
+              type="link"
+              size="small"
+              className="p-0 h-auto text-xs"
+              onClick={() => handleSetScore(record)}
+            >
+              ⚡ Adjust Score
+            </Button>
+          </div>
+        ),
+        sorter: (a, b) =>
+          (a.dynamicScore?.totalDynamicScore || 0) -
+          (b.dynamicScore?.totalDynamicScore || 0),
       },
       {
         title: "Status",
@@ -546,6 +645,13 @@ const Documents = () => {
               className="max-w-md"
             />
             <div className="flex gap-2">
+              <Button
+                onClick={handleRecalculateAll}
+                loading={recalculating}
+                className="bg-green-50 border-green-300 text-green-700 hover:bg-green-100"
+              >
+                ⚡ Recalculate All Scores
+              </Button>
               <Select
                 defaultValue=""
                 style={{ width: 150 }}
@@ -574,7 +680,13 @@ const Documents = () => {
           dataSource={filteredData}
           rowKey="_id"
           loading={loading}
-          pagination={{ pageSize: 10 }}
+          pagination={{
+            current: currentPage,
+            total: totalDocs,
+            pageSize: pageSize,
+            onChange: (page) => setCurrentPage(page),
+            showSizeChanger: false,
+          }}
         />
       </div>
     );
@@ -657,9 +769,21 @@ const Documents = () => {
                 ))}
               </Select>
             </Form.Item>
-            <Form.Item name="score" label="Score (Points)">
-              <InputNumber min={0} className="w-full" />
-            </Form.Item>
+
+            {/* Score is automatic, no manual input allowed here */}
+            {editingDoc && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                <div className="flex items-center gap-2 text-blue-700 text-sm">
+                  <span>💡</span>
+                  <span>
+                    <strong>Score</strong> is automatically calculated from
+                    interactions (views, favorites, downloads). To adjust it,
+                    use the <strong>"Adjust Score"</strong> button in the
+                    Documents table.
+                  </span>
+                </div>
+              </div>
+            )}
 
             {editingDoc && (
               <Form.Item name="status" label="Status">
@@ -775,6 +899,144 @@ const Documents = () => {
                   );
                 }
               })()}
+            </div>
+          )}
+        </Modal>
+
+        {/* Score Management Modal */}
+        <Modal
+          title={`⚡ Adjust Score — ${scoringDoc?.title || ""}`}
+          open={scoreModalOpen}
+          onOk={handleScoreSubmit}
+          onCancel={() => setScoreModalOpen(false)}
+          confirmLoading={scoreLoading}
+          okText="Update Score"
+          width={600}
+        >
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
+            <div className="text-amber-700 text-xs">
+              <strong>📌 Note:</strong> Score is automatically calculated from
+              user interactions (views, favorites, downloads) + time decay.
+              Admin should only adjust when needed to boost high-quality
+              documents or penalty low-quality ones. All changes are recorded in
+              history.
+            </div>
+          </div>
+          <Form form={scoreForm} layout="vertical">
+            <Form.Item
+              name="score"
+              label="Adjustment Score (Admin Bonus/Penalty)"
+              rules={[{ required: true, message: "Please enter score" }]}
+              extra="This score will be added to the Dynamic Score to calculate the Total Score"
+            >
+              <InputNumber min={-50} max={100} className="w-full" />
+            </Form.Item>
+            <Form.Item
+              name="reason"
+              label="Adjustment Reason"
+              rules={[{ required: true, message: "Reason is required" }]}
+            >
+              <Input.TextArea
+                rows={2}
+                placeholder="Enter score adjustment reason..."
+              />
+            </Form.Item>
+          </Form>
+
+          {/* Dynamic Score Breakdown */}
+          {scoringDoc?.dynamicScore && (
+            <div className="bg-gray-50 p-4 rounded-lg mb-4">
+              <h4 className="font-semibold text-gray-700 mb-3">
+                📊 Dynamic Score Breakdown
+              </h4>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-500">👁 View Score:</span>
+                  <Tag color="blue">
+                    {scoringDoc.dynamicScore.viewScore?.toFixed(1) || 0}
+                  </Tag>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">❤️ Favorite Score:</span>
+                  <Tag color="red">
+                    {scoringDoc.dynamicScore.favoriteScore || 0}
+                  </Tag>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">⬇️ Download Score:</span>
+                  <Tag color="purple">
+                    {scoringDoc.dynamicScore.downloadScore?.toFixed(1) || 0}
+                  </Tag>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">🎯 Engagement:</span>
+                  <Tag color="orange">
+                    {scoringDoc.dynamicScore.engagementScore || 0}
+                  </Tag>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">📂 Category Diversity:</span>
+                  <Tag color="cyan">
+                    {scoringDoc.dynamicScore.categoryDiversityScore || 0}
+                  </Tag>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">⏱ Time Decay Score:</span>
+                  <Tag color="gold">
+                    {scoringDoc.dynamicScore.timeDecayScore?.toFixed(1) || 0}
+                  </Tag>
+                </div>
+              </div>
+              <div className="mt-3 pt-3 border-t border-gray-200 flex justify-between items-center">
+                <span className="font-semibold text-gray-700">
+                  🏆 Total Dynamic Score:
+                </span>
+                <Tag color="green" className="text-base font-bold">
+                  {scoringDoc.dynamicScore.totalDynamicScore?.toFixed(1) || 0}
+                </Tag>
+              </div>
+            </div>
+          )}
+
+          {/* Score History */}
+          {scoreHistory.length > 0 && (
+            <div className="bg-white border border-gray-200 rounded-lg p-4">
+              <h4 className="font-semibold text-gray-700 mb-3">
+                📜 Score Change History
+              </h4>
+              <div className="max-h-48 overflow-y-auto space-y-2">
+                {scoreHistory.map((entry, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-start gap-2 text-xs p-2 bg-gray-50 rounded"
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <Tag color="red" className="text-[10px]">
+                          {entry.previousScore}
+                        </Tag>
+                        <span>→</span>
+                        <Tag color="green" className="text-[10px]">
+                          {entry.newScore}
+                        </Tag>
+                        <span className="text-gray-400 ml-auto">
+                          {new Date(entry.changedAt).toLocaleDateString(
+                            "en-US",
+                          )}
+                        </span>
+                      </div>
+                      {entry.reason && (
+                        <div className="text-gray-500 mt-1 italic">
+                          {entry.reason}
+                        </div>
+                      )}
+                      <div className="text-gray-400 mt-0.5">
+                        by {entry.changedBy?.fullName || "System"}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </Modal>

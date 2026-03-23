@@ -1,5 +1,4 @@
-const https = require("https");
-const http = require("http");
+const axios = require("axios");
 
 // Try to require optional dependencies
 let pdfParse = null;
@@ -25,20 +24,21 @@ try {
 }
 
 /**
- * Download file from URL and return as buffer
+ * Download file from URL and return as buffer using axios
  */
-const downloadFile = (url) => {
-  return new Promise((resolve, reject) => {
-    const protocol = url.startsWith("https") ? https : http;
-    protocol
-      .get(url, (res) => {
-        const chunks = [];
-        res.on("data", (chunk) => chunks.push(chunk));
-        res.on("end", () => resolve(Buffer.concat(chunks)));
-        res.on("error", reject);
-      })
-      .on("error", reject);
-  });
+const downloadFile = async (url) => {
+  try {
+    const response = await axios({
+      method: "get",
+      url: url,
+      responseType: "arraybuffer",
+      timeout: 15000, // 15 seconds timeout
+    });
+    return Buffer.from(response.data);
+  } catch (error) {
+    console.error(`Error downloading file from ${url}:`, error.message);
+    throw new Error(`Cloudinary download failed: ${error.message}`);
+  }
 };
 
 /**
@@ -47,15 +47,16 @@ const downloadFile = (url) => {
 const extractTextFromPDF = async (fileUrl) => {
   try {
     if (!pdfParse) {
-      return "PDF text extraction requires pdf-parse package. Install with: npm install pdf-parse";
+      console.warn("pdf-parse is missing");
+      return null;
     }
 
     const buffer = await downloadFile(fileUrl);
     const data = await pdfParse(buffer);
-    return data.text || "No text found in PDF";
+    return data.text || "";
   } catch (error) {
-    console.error("PDF extraction error:", error);
-    throw new Error(`Failed to extract PDF text: ${error.message}`);
+    console.error("PDF extraction error:", error.message);
+    return null;
   }
 };
 
@@ -65,15 +66,16 @@ const extractTextFromPDF = async (fileUrl) => {
 const extractTextFromDOCX = async (fileUrl) => {
   try {
     if (!mammoth) {
-      return "DOCX text extraction requires mammoth package. Install with: npm install mammoth";
+      console.warn("mammoth is missing");
+      return null;
     }
 
     const buffer = await downloadFile(fileUrl);
     const result = await mammoth.extractRawText({ buffer });
-    return result.value || "No text found in DOCX";
+    return result.value || "";
   } catch (error) {
-    console.error("DOCX extraction error:", error);
-    throw new Error(`Failed to extract DOCX text: ${error.message}`);
+    console.error("DOCX extraction error:", error.message);
+    return null;
   }
 };
 
@@ -83,7 +85,8 @@ const extractTextFromDOCX = async (fileUrl) => {
 const extractTextFromExcel = async (fileUrl) => {
   try {
     if (!xlsx) {
-      return "Excel text extraction requires xlsx package. Install with: npm install xlsx";
+      console.warn("xlsx is missing");
+      return null;
     }
 
     const buffer = await downloadFile(fileUrl);
@@ -96,10 +99,10 @@ const extractTextFromExcel = async (fileUrl) => {
       text += `Sheet: ${sheetName}\n${sheetText}\n\n`;
     });
 
-    return text || "No text found in Excel file";
+    return text || "";
   } catch (error) {
-    console.error("Excel extraction error:", error);
-    throw new Error(`Failed to extract Excel text: ${error.message}`);
+    console.error("Excel extraction error:", error.message);
+    return null;
   }
 };
 
@@ -107,37 +110,32 @@ const extractTextFromExcel = async (fileUrl) => {
  * Fetch text content from URL (for plain text files)
  */
 const fetchTextFromUrl = async (url) => {
-  return new Promise((resolve, reject) => {
-    const protocol = url.startsWith("https") ? https : http;
-    protocol
-      .get(url, (res) => {
-        let data = "";
-        res.on("data", (chunk) => {
-          data += chunk;
-        });
-        res.on("end", () => {
-          resolve(data);
-        });
-      })
-      .on("error", (err) => {
-        reject(err);
-      });
-  });
+  try {
+    const response = await axios.get(url);
+    return typeof response.data === "string" ? response.data : JSON.stringify(response.data);
+  } catch (error) {
+    console.error("Text fetch error:", error.message);
+    return null;
+  }
 };
 
 /**
  * Extract text from various document formats
  * @param {string} fileUrl - URL of the document (Cloudinary URL)
  * @param {string} fileType - MIME type or file extension
- * @returns {Promise<string>} Extracted text content
+ * @returns {Promise<string|null>} Extracted text content or null if failed
  */
 const extractTextFromDocument = async (fileUrl, fileType) => {
   try {
-    const lowerType = fileType.toLowerCase();
+    const lowerType = (fileType || "").toLowerCase();
+    
+    console.log(`Extracting text for type: ${lowerType} from URL: ${fileUrl}`);
+
+    let text = null;
 
     // PDF files
     if (lowerType.includes("pdf")) {
-      return await extractTextFromPDF(fileUrl);
+      text = await extractTextFromPDF(fileUrl);
     }
     // Word documents
     else if (
@@ -145,15 +143,16 @@ const extractTextFromDocument = async (fileUrl, fileType) => {
       lowerType.includes("docx") ||
       lowerType.includes("doc")
     ) {
-      return await extractTextFromDOCX(fileUrl);
+      text = await extractTextFromDOCX(fileUrl);
     }
     // Excel files
     else if (
       lowerType.includes("excel") ||
       lowerType.includes("xlsx") ||
-      lowerType.includes("xls")
+      lowerType.includes("xls") ||
+      lowerType.includes("sheet")
     ) {
-      return await extractTextFromExcel(fileUrl);
+      text = await extractTextFromExcel(fileUrl);
     }
     // Text files
     else if (
@@ -161,24 +160,20 @@ const extractTextFromDocument = async (fileUrl, fileType) => {
       lowerType.includes("plain") ||
       lowerType.includes("txt")
     ) {
-      return await fetchTextFromUrl(fileUrl);
+      text = await fetchTextFromUrl(fileUrl);
     }
-    // PowerPoint (limited support)
-    else if (
-      lowerType.includes("powerpoint") ||
-      lowerType.includes("pptx") ||
-      lowerType.includes("ppt")
-    ) {
-      return "PowerPoint text extraction is not yet fully supported. Please provide a description manually.";
+    
+    if (text) {
+      console.log(`Successfully extracted ${text.length} characters.`);
+      // Clean up text (remove excessive whitespace)
+      return text.replace(/\s+/g, ' ').trim();
     }
-    // Unsupported formats
-    else {
-      return `Text extraction not yet implemented for ${fileType}. Please provide a description manually.`;
-    }
+    
+    console.warn("No text could be extracted from this file type or file content.");
+    return null;
   } catch (error) {
-    console.error("Document text extraction error:", error);
-    // Return error message instead of throwing, so AI can still use description
-    return `Failed to extract text from document: ${error.message}. Please ensure the file is accessible.`;
+    console.error("Document text extraction error:", error.message);
+    return null;
   }
 };
 
@@ -188,3 +183,4 @@ module.exports = {
   extractTextFromDOCX,
   extractTextFromExcel,
 };
+

@@ -55,7 +55,7 @@ const Analytics = () => {
         }).length;
 
         // Filter documents uploaded this month
-        const documents = docsRes?.data || [];
+        const documents = docsRes?.data?.docs || [];
         const uploadsThisMonth = documents.filter((doc) => {
           const createdDate = new Date(doc.createdAt);
           return (

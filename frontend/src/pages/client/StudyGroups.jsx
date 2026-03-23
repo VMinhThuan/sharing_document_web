@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 
 const StudyGroups = () => {
     return (
-        <main className="flex-1 p-8 lg:p-12 overflow-y-auto h-screen">
+        <main className="flex-1 p-8 lg:p-12 overflow-y-auto h-screen bg-[#f9fafb] dark:bg-background-dark transition-colors">
             <header className="mb-10 max-w-6xl mx-auto">
                 <div className="flex justify-between items-start">
                     <div>

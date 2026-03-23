@@ -113,6 +113,18 @@ const updatePassword = async (req, res) => {
   }
 };
 
+// @desc    Update user profile
+// @route   PUT /api/v1/auth/updateprofile
+// @access  Private
+const updateProfile = async (req, res) => {
+  try {
+    const user = await authService.updateProfile(req.user.id, req.body);
+    return successResponse(res, 200, "Profile updated successfully", user);
+  } catch (error) {
+    return errorResponse(res, 400, "Update profile failed", error.message);
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -121,4 +133,5 @@ module.exports = {
   forgotPassword,
   resetPassword,
   updatePassword,
+  updateProfile,
 };

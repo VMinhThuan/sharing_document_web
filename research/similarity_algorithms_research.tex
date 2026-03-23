@@ -1,0 +1,519 @@
+\documentclass[12pt,a4paper]{article}
+
+% ===== PACKAGES =====
+\usepackage[utf8]{inputenc}
+\usepackage[vietnamese]{babel}
+\usepackage{amsmath, amssymb, amsfonts}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{geometry}
+\usepackage{fancyhdr}
+\usepackage{enumitem}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{tikz}
+\usepackage{listings}
+
+\geometry{top=2.5cm, bottom=2.5cm, left=3cm, right=2.5cm}
+
+% ===== HEADER / FOOTER =====
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\textit{Nghiên cứu thuật toán tương đồng cho hệ thống gợi ý tài liệu}}
+\fancyhead[R]{\small\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% ===== COLORS =====
+\definecolor{primaryblue}{RGB}{37, 99, 235}
+\definecolor{darkgray}{RGB}{50, 50, 50}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=primaryblue,
+    citecolor=primaryblue,
+    urlcolor=primaryblue
+}
+
+% ===== TITLE =====
+\title{
+    \vspace{-1cm}
+    \textbf{\Large NGHIÊN CỨU TỔNG QUAN CÁC THUẬT TOÁN ĐO LƯỜNG ĐỘ TƯƠNG ĐỒNG \\[0.3cm] ÁP DỤNG CHO HỆ THỐNG GỢI Ý TÀI LIỆU HỌC TẬP}
+    \\[0.5cm]
+    \large\textit{A Survey on Similarity Measurement Algorithms \\for Document Recommendation Systems}
+}
+\author{
+    SmartShare AI -- Nền tảng chia sẻ tài liệu học tập
+}
+\date{Ngày nghiên cứu: 27/02/2026}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{fancy}
+
+% ===== ABSTRACT =====
+\begin{abstract}
+\noindent
+Bài nghiên cứu này trình bày tổng quan toàn diện về các thuật toán đo lường độ tương đồng (similarity measurement algorithms) được sử dụng phổ biến trên thế giới trong các hệ thống gợi ý (recommendation systems), đặc biệt trong lĩnh vực gợi ý tài liệu học tập. Nghiên cứu phân tích 5 thuật toán gốc (Cosine Similarity, Euclidean Distance, Manhattan Distance, Jaccard Similarity, Pearson Correlation), các phiên bản cải tiến nổi bật giai đoạn 2024--2025 (Modified Cosine Similarity, Weighted Cosine Similarity, Adaptive Cosine Similarity, BM25, Sentence-BERT, Overlap Similarity, Hyperbolic Tangent Similarity), cùng với các công nghệ lưu trữ vector hiện đại (FAISS, Pinecone, Milvus, MongoDB Atlas Vector Search). Từ đó, đề xuất một thuật toán kết hợp (hybrid) gồm Weighted Cosine Similarity kết hợp Sentence Embedding và Time Decay Function để áp dụng vào hệ thống SmartShare AI.
+
+\vspace{0.3cm}
+\noindent\textbf{Từ khóa:} Cosine Similarity, Modified Cosine Similarity, Vector Embedding, Recommendation System, BM25, Sentence-BERT, HNSW, FAISS, Hybrid Filtering.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+% ===================================================================
+\section{Giới thiệu}
+% ===================================================================
+
+Hệ thống gợi ý (Recommendation System) đóng vai trò quan trọng trong các nền tảng chia sẻ tài liệu học tập, giúp cá nhân hóa trải nghiệm người dùng bằng cách đề xuất những tài liệu phù hợp nhất dựa trên sở thích, hành vi, và lịch sử tương tác. Cốt lõi của mọi hệ thống gợi ý là \textbf{thuật toán đo lường độ tương đồng} (similarity measurement algorithm) --- phương pháp tính toán mức độ giống nhau giữa hai đối tượng (user-user, item-item, hoặc user-item).
+
+Trên thế giới, các thuật toán gốc như Cosine Similarity, Euclidean Distance đã được sử dụng rộng rãi nhưng bộc lộ nhiều hạn chế khi áp dụng vào thực tế. Do đó, các nhà nghiên cứu liên tục đề xuất các phiên bản cải tiến để khắc phục những nhược điểm này. Bài nghiên cứu này tổng hợp và phân tích các thuật toán từ gốc đến cải tiến mới nhất (2024--2025), đồng thời đề xuất giải pháp phù hợp cho hệ thống SmartShare AI.
+
+% ===================================================================
+\section{Các thuật toán gốc (Original Algorithms)}
+% ===================================================================
+
+\subsection{Cosine Similarity (Độ tương đồng Cosine)}
+
+Cosine Similarity đo góc giữa hai vector trong không gian nhiều chiều, chỉ quan tâm đến \textit{hướng} (orientation) mà không xét \textit{độ lớn} (magnitude) của vector.
+
+\begin{equation}
+\text{CosSim}(\mathbf{A}, \mathbf{B}) = \frac{\mathbf{A} \cdot \mathbf{B}}{\|\mathbf{A}\| \times \|\mathbf{B}\|} = \frac{\sum_{i=1}^{n} a_i \cdot b_i}{\sqrt{\sum_{i=1}^{n} a_i^2} \times \sqrt{\sum_{i=1}^{n} b_i^2}}
+\label{eq:cosine}
+\end{equation}
+
+\noindent\textbf{Giá trị:} $[-1, 1]$, trong đó $1$ là hoàn toàn giống, $0$ là không liên quan, $-1$ là ngược chiều hoàn toàn.
+
+\noindent\textbf{Ưu điểm:}
+\begin{itemize}[noitemsep]
+    \item Không bị ảnh hưởng bởi độ dài vector (scale-invariant)
+    \item Hiệu quả cho dữ liệu văn bản dạng TF-IDF
+    \item Chi phí tính toán thấp
+\end{itemize}
+
+\noindent\textbf{Nhược điểm:}
+\begin{itemize}[noitemsep]
+    \item Bỏ qua thông tin magnitude --- nghiên cứu năm 2025 chỉ ra rằng magnitude chứa thông tin ngữ nghĩa quan trọng \cite{magnitude2025}
+    \item Kém hiệu quả với dữ liệu thưa (sparse data)
+    \item Không xem xét sự khác biệt về tiêu chuẩn đánh giá giữa các user
+\end{itemize}
+
+\subsection{Euclidean Distance (Khoảng cách Euclid)}
+
+Euclidean Distance đo khoảng cách đường thẳng (L2 Norm) giữa hai điểm trong không gian $n$ chiều.
+
+\begin{equation}
+d(\mathbf{A}, \mathbf{B}) = \sqrt{\sum_{i=1}^{n} (a_i - b_i)^2}
+\label{eq:euclidean}
+\end{equation}
+
+\noindent\textbf{Ưu điểm:} Trực quan, dễ hiểu, xem xét magnitude.\\
+\noindent\textbf{Nhược điểm:} Nhạy cảm với scale khác nhau giữa các feature, chi phí tính toán cao ở không gian nhiều chiều (curse of dimensionality).
+
+\subsection{Manhattan Distance (Khoảng cách Manhattan)}
+
+Manhattan Distance (L1 Norm) tính tổng giá trị tuyệt đối của hiệu các tọa độ.
+
+\begin{equation}
+d(\mathbf{A}, \mathbf{B}) = \sum_{i=1}^{n} |a_i - b_i|
+\label{eq:manhattan}
+\end{equation}
+
+\noindent\textbf{Ưu điểm:} Nhanh hơn Euclidean (không cần căn bậc hai), phù hợp dữ liệu thưa.\\
+\noindent\textbf{Nhược điểm:} Ít phân biệt hơn Euclidean trong không gian cao chiều.
+
+\subsection{Jaccard Similarity}
+
+Jaccard Similarity đo tỷ lệ phần tử chung giữa hai tập hợp.
+
+\begin{equation}
+J(\mathbf{A}, \mathbf{B}) = \frac{|A \cap B|}{|A \cup B|}
+\label{eq:jaccard}
+\end{equation}
+
+\noindent\textbf{Ưu điểm:} Phù hợp cho dữ liệu dạng tập hợp (tags, categories).\\
+\noindent\textbf{Nhược điểm:} Không xem xét tần suất (frequency) của các phần tử.
+
+\subsection{Pearson Correlation Coefficient}
+
+Pearson Correlation đo mức độ tương quan tuyến tính giữa hai biến.
+
+\begin{equation}
+r(\mathbf{A}, \mathbf{B}) = \frac{\sum_{i=1}^{n}(a_i - \bar{a})(b_i - \bar{b})}{\sqrt{\sum_{i=1}^{n}(a_i - \bar{a})^2 \times \sum_{i=1}^{n}(b_i - \bar{b})^2}}
+\label{eq:pearson}
+\end{equation}
+
+\noindent\textbf{Ưu điểm:} Loại bỏ bias từ khác biệt scale đánh giá giữa các user.\\
+\noindent\textbf{Nhược điểm:} Chỉ phát hiện quan hệ tuyến tính, không phát hiện phi tuyến.
+
+% ===================================================================
+\section{Tại sao cần cải tiến?}
+% ===================================================================
+
+Các thuật toán gốc có nhiều hạn chế thực tế mà các hệ thống sản phẩm \textbf{không bao giờ sử dụng nguyên bản}:
+
+\subsection{Hạn chế của Cosine Similarity gốc}
+\begin{enumerate}[noitemsep]
+    \item \textbf{Bỏ qua Magnitude:} Nghiên cứu ``Magnitude Matters'' (arXiv, 09/2025) chứng minh rằng magnitude của vector embedding chứa thông tin ngữ nghĩa quan trọng mà Cosine Similarity hoàn toàn bỏ qua \cite{magnitude2025}.
+    \item \textbf{Cold-start problem:} Không hoạt động khi user/item mới chưa có dữ liệu tương tác.
+    \item \textbf{Data sparsity:} Khi ma trận user-item rất thưa, kết quả tính toán kém chính xác.
+\end{enumerate}
+
+\subsection{Hạn chế của TF-IDF gốc}
+\begin{enumerate}[noitemsep]
+    \item Chỉ phân tích mức \textit{từ vựng} (lexical), không hiểu \textit{ngữ nghĩa} (semantic).
+    \item Không xem xét thứ tự từ và ngữ cảnh.
+    \item Tạo sparse vector (hàng ngàn chiều, đa số bằng 0) --- chậm và tốn bộ nhớ.
+\end{enumerate}
+
+\subsection{Xu hướng cải tiến trên thế giới}
+\begin{enumerate}[noitemsep]
+    \item Kết hợp nhiều phương pháp (\textbf{Hybrid}): Lexical + Semantic
+    \item Thêm trọng số (\textbf{Weighting}): Gán weight cho các feature quan trọng
+    \item Xem xét ngữ cảnh (\textbf{Context-aware}): Thời gian, hành vi user
+    \item Dùng \textbf{Deep Learning Embeddings}: BERT, Sentence-BERT thay cho TF-IDF
+    \item \textbf{Approximate Nearest Neighbor (ANN)}: Tìm kiếm xấp xỉ tăng tốc độ
+\end{enumerate}
+
+% ===================================================================
+\section{Các thuật toán cải tiến trên thế giới (2024--2025)}
+% ===================================================================
+
+\subsection{Modified Cosine Similarity (MCS)}
+
+Modified Cosine Similarity trừ đi giá trị trung bình đánh giá của từng user trước khi tính cosine, giúp loại bỏ bias cá nhân.
+
+\begin{equation}
+\text{MCS}(u, v) = \frac{\sum_{i \in I_{uv}}(r_{ui} - \bar{r}_u)(r_{vi} - \bar{r}_v)}{\sqrt{\sum_{i \in I_{uv}}(r_{ui} - \bar{r}_u)^2} \times \sqrt{\sum_{i \in I_{uv}}(r_{vi} - \bar{r}_v)^2}}
+\label{eq:mcs}
+\end{equation}
+
+trong đó $\bar{r}_u$ là rating trung bình của user $u$, $I_{uv}$ là tập item mà cả $u$ và $v$ đều đánh giá.
+
+\noindent\textbf{Cải tiến so với Cosine gốc:} Cosine gốc không xem xét việc user A luôn cho 5 sao trong khi user B hay cho 3 sao. MCS chuẩn hóa theo user, giúp so sánh công bằng hơn.
+
+\noindent\textbf{Nghiên cứu mới nhất:}
+\begin{itemize}[noitemsep]
+    \item \textit{PLOS ONE} (09/2025): Thêm \textbf{rating correction coefficient} và \textbf{item popularity coefficient} vào MCS cho bundle recommendation \cite{plosone2025}.
+    \item \textit{SPIE Digital Library} (05/2025): Tích hợp MCS với \textbf{time decay function} và \textbf{user attributes} \cite{spie2025}.
+\end{itemize}
+
+\subsection{Weighted Cosine Similarity (WCS)}
+
+Weighted Cosine Similarity gán trọng số khác nhau cho từng chiều (dimension/feature) dựa trên mức độ quan trọng.
+
+\begin{equation}
+\text{WCS}(\mathbf{A}, \mathbf{B}) = \frac{\sum_{i=1}^{n} w_i \cdot a_i \cdot b_i}{\sqrt{\sum_{i=1}^{n} w_i \cdot a_i^2} \times \sqrt{\sum_{i=1}^{n} w_i \cdot b_i^2}}
+\label{eq:wcs}
+\end{equation}
+
+trong đó $w_i$ là trọng số của feature thứ $i$.
+
+\noindent\textbf{Cải tiến so với Cosine gốc:} Không phải mọi feature đều quan trọng như nhau. Ví dụ: ``Category'' nên có trọng số cao hơn ``file size'' khi gợi ý tài liệu.
+
+\noindent\textbf{Nghiên cứu mới nhất:}
+\begin{itemize}[noitemsep]
+    \item \textit{UMI Makassar} (10/2025): User-weighted cosine similarity cho tour package recommendation \cite{umi2025}.
+    \item \textit{MDPI} (06/2025): Noun count-weighted cosine similarity cho healthcare communication \cite{mdpi2025}.
+\end{itemize}
+
+\subsection{Adaptive Cosine Similarity (ACS)}
+
+Adaptive Cosine Similarity tự động điều chỉnh ngưỡng và tham số tương đồng dựa trên bối cảnh dữ liệu.
+
+\noindent\textbf{Nghiên cứu mới nhất:}
+\begin{itemize}[noitemsep]
+    \item \textit{arXiv} (09/2025): Framework \textbf{pEBR} (Probabilistic Embedding-Based Retrieval) sử dụng \textbf{adaptive cosine similarity cutoffs} để tối ưu precision và recall \cite{pebr2025}.
+    \item \textit{ResearchGate} (08/2025): Thuật toán \textbf{DE-SCS} sử dụng adaptive cosine similarity trong Differential Evolution \cite{descs2025}.
+\end{itemize}
+
+\noindent\textbf{Cải tiến so với Cosine gốc:} Ngưỡng tương đồng cố định không phù hợp cho mọi tình huống. ACS tự điều chỉnh theo đặc điểm cục bộ của dữ liệu.
+
+\subsection{BM25 (Best Matching 25) --- Cải tiến TF-IDF}
+
+BM25 cải tiến TF-IDF bằng cách thêm \textbf{term frequency saturation} (bão hòa tần suất) và \textbf{document length normalization}.
+
+\begin{equation}
+\text{BM25}(q, d) = \sum_{i=1}^{|q|} \text{IDF}(q_i) \cdot \frac{f(q_i, d) \cdot (k_1 + 1)}{f(q_i, d) + k_1 \cdot \left(1 - b + b \cdot \frac{|d|}{\text{avgdl}}\right)}
+\label{eq:bm25}
+\end{equation}
+
+trong đó $k_1$ là tham số bão hòa (thường $= 1.2$--$2.0$), $b$ là tham số chuẩn hóa độ dài (thường $= 0.75$), $\text{avgdl}$ là độ dài trung bình tất cả documents.
+
+\noindent\textbf{Cải tiến so với TF-IDF gốc:}
+\begin{itemize}[noitemsep]
+    \item TF-IDF: Từ xuất hiện 100 lần được weight gấp 100 lần so với 1 lần --- không hợp lý.
+    \item BM25: Sau ngưỡng bão hòa, việc xuất hiện thêm không tăng weight đáng kể.
+    \item Chuẩn hóa theo độ dài document giúp so sánh công bằng giữa tài liệu ngắn và dài.
+\end{itemize}
+
+\subsection{Sentence-BERT (SBERT) + Cosine Similarity}
+
+Sentence-BERT sử dụng deep learning (Transformer architecture) để tạo \textbf{dense semantic embeddings} thay cho TF-IDF sparse vectors, sau đó dùng cosine similarity để so sánh.
+
+\noindent\textbf{Cải tiến so với TF-IDF + Cosine:}
+\begin{itemize}[noitemsep]
+    \item TF-IDF tạo sparse vector (hàng ngàn chiều, đa số $= 0$) --- chậm, tốn bộ nhớ.
+    \item SBERT tạo dense vector (384--768 chiều) --- nhanh, hiệu quả hơn.
+    \item Hiểu semantic: ``machine learning'' $\approx$ ``artificial intelligence'' (TF-IDF không nhận ra).
+\end{itemize}
+
+\noindent\textbf{Nghiên cứu mới nhất:}
+\begin{itemize}[noitemsep]
+    \item \textit{Preprints.org} (2025): Hybrid TF-IDF + SBERT feature fusion đạt \textbf{F1 = 0.903} \cite{hybrid2025}.
+    \item \textit{arXiv} (2025): Hybrid BM25 + fine-tuned sentence transformer cải thiện Recall@10 và MAP@10 \cite{hybridbm25sbert2025}.
+\end{itemize}
+
+\subsection{Magnitude-Aware Similarity Metrics (Mới nhất 2025)}
+
+Đây là nghiên cứu \textbf{mới nhất và đáng chú ý nhất} --- đề xuất hai metric hoàn toàn mới tích hợp cả magnitude và hướng (alignment) của vector.
+
+\subsubsection{Overlap Similarity (OS)}
+\begin{equation}
+\text{OS}(\mathbf{A}, \mathbf{B}) = \frac{\mathbf{A} \cdot \mathbf{B}}{\min(\|\mathbf{A}\|^2, \|\mathbf{B}\|^2)}
+\label{eq:os}
+\end{equation}
+
+\subsubsection{Hyperbolic Tangent Similarity (HTS)}
+\begin{equation}
+\text{HTS}(\mathbf{A}, \mathbf{B}) = \tanh\left(\frac{\mathbf{A} \cdot \mathbf{B}}{\|\mathbf{A}\| \times \|\mathbf{B}\|}\right)
+\label{eq:hts}
+\end{equation}
+
+\noindent\textbf{Bài báo:} ``Magnitude Matters: a Superior Class of Similarity Metrics for Holistic Semantic Understanding'' --- \textit{arXiv}, 09/2025 \cite{magnitude2025}.\\
+\noindent\textbf{Kết quả:} Cải thiện \textbf{có ý nghĩa thống kê} so với cosine similarity trong các task paraphrase và inference. Phát hiện rằng vector magnitude chứa thông tin ngữ nghĩa quan trọng mà cosine similarity hoàn toàn bỏ qua.
+
+% ===================================================================
+\section{Vector Database --- Lưu trữ và tìm kiếm vector}
+% ===================================================================
+
+Vector Database là hệ cơ sở dữ liệu chuyên biệt được thiết kế cho việc lưu trữ, đánh chỉ mục (indexing) và tìm kiếm các vector embedding nhiều chiều. Thị trường vector database đang tăng trưởng nhanh, dự kiến đạt 4.3 tỷ USD vào năm 2028.
+
+\begin{table}[H]
+\centering
+\caption{So sánh các Vector Database phổ biến}
+\label{tab:vectordb}
+\begin{tabular}{@{}lccccl@{}}
+\toprule
+\textbf{Database} & \textbf{Open Source} & \textbf{Cloud} & \textbf{Latency} & \textbf{Max Vectors} & \textbf{Chi phí} \\
+\midrule
+FAISS (Meta AI) & \checkmark & -- & $< 1$ms & Hàng triệu & Miễn phí \\
+Pinecone & -- & \checkmark & $< 50$ms & Hàng tỷ & Trả phí \\
+Milvus (Zilliz) & \checkmark & \checkmark & $< 10$ms & Hàng tỷ & Miễn phí (self-host) \\
+MongoDB Vector & \checkmark & \checkmark & $< 100$ms & Hàng triệu & Cùng MongoDB \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent\textbf{Xu hướng 2024--2025:}
+\begin{itemize}[noitemsep]
+    \item \textbf{Hybrid Search}: Kết hợp vector search + keyword search
+    \item \textbf{ANN Algorithms}: HNSW, IVF, Product Quantization cho tìm kiếm xấp xỉ cực nhanh
+    \item \textbf{Cloud-native}: Auto-scaling, serverless
+    \item Tích hợp trực tiếp vào RDBMS hiện có (PostgreSQL pgvector, MongoDB Atlas Vector Search)
+\end{itemize}
+
+% ===================================================================
+\section{Bảng so sánh toàn diện}
+% ===================================================================
+
+\begin{table}[H]
+\centering
+\caption{So sánh các thuật toán đo khoảng cách/tương đồng}
+\label{tab:compare}
+\small
+\begin{tabular}{@{}lcccccl@{}}
+\toprule
+\textbf{Thuật toán} & \textbf{Loại} & \textbf{Hướng} & \textbf{Magnitude} & \textbf{Sparse} & \textbf{Tốc độ} & \textbf{Phù hợp} \\
+\midrule
+Cosine (gốc) & Metric & \checkmark & -- & TB & Nhanh & NLP, text \\
+Euclidean (gốc) & Distance & -- & \checkmark & Kém & TB & Image, số \\
+Manhattan (gốc) & Distance & -- & \checkmark & Tốt & Nhanh & Sparse, grid \\
+Modified Cosine & Metric & \checkmark & -- & Tốt & Nhanh & CF \\
+Weighted Cosine & Metric & \checkmark & -- & Tốt & Nhanh & CBF \\
+BM25 & Score & N/A & N/A & Tốt & Nhanh & Full-text \\
+SBERT + Cosine & Metric & \checkmark & -- & Tốt & TB & Semantic \\
+HTS (mới 2025) & Metric & \checkmark & \checkmark & Tốt & Nhanh & Holistic \\
+OS (mới 2025) & Metric & \checkmark & \checkmark & Tốt & Nhanh & Paraphrase \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{So sánh phương pháp tạo Vector Embedding}
+\label{tab:embedding}
+\begin{tabular}{@{}lllccl@{}}
+\toprule
+\textbf{Phương pháp} & \textbf{Loại Vector} & \textbf{Số chiều} & \textbf{Semantic} & \textbf{Tốc độ} & \textbf{Chi phí} \\
+\midrule
+TF-IDF (gốc) & Sparse & Hàng ngàn & -- & Rất nhanh & Thấp \\
+BM25 & Sparse/Score & N/A & -- & Rất nhanh & Thấp \\
+Word2Vec & Dense & 100--300 & Phần nào & Nhanh & Thấp \\
+BERT & Dense & 768 & \checkmark & Chậm & TB \\
+Sentence-BERT & Dense & 384--768 & \checkmark\checkmark & TB & TB \\
+Groq/OpenAI & Dense & 768--1536 & \checkmark\checkmark\checkmark & Phụ thuộc API & Trả phí \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ===================================================================
+\section{Các bài báo khoa học mới nhất (2024--2025)}
+\label{sec:papers}
+% ===================================================================
+
+\begin{table}[H]
+\centering
+\caption{Các bài báo khoa học quan trọng nhất (2024--2025)}
+\label{tab:papers}
+\small
+\begin{tabular}{@{}clll@{}}
+\toprule
+\textbf{\#} & \textbf{Tên bài báo} & \textbf{Năm} & \textbf{Tạp chí/Nguồn} \\
+\midrule
+1 & Magnitude Matters: Superior Similarity Metrics & 09/2025 & arXiv (preprint) \\
+2 & pEBR: Adaptive Cosine Similarity Cutoffs & 09/2025 & arXiv \\
+3 & Multi-factor CF with Modified Cosine + Time Decay & 05/2025 & SPIE Digital Library \\
+4 & Hybrid TF-IDF + SBERT Feature Fusion & 2025 & Preprints.org \\
+5 & Hybrid BM25 + Sentence Transformer & 2025 & arXiv \\
+6 & Modified Cosine for Bundle Recommendation & 09/2025 & PLOS ONE (Q1) \\
+7 & Graph-Based Recommendation with Cosine & 2024 & European Research Studies \\
+8 & CF + Knowledge Graphs with Modified Cosine & 11/2025 & Emerald Publishing \\
+9 & Survey: Vector-Indexed Approaches to RAG & 11/2024 & IJCRT \\
+10 & Longitudinal Eval. of Similarity-based Recommender & 09/2025 & INRA @ RecSys 2025 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent\textbf{Khuyến nghị bám theo:}
+\begin{enumerate}
+    \item Bài \#1 (Magnitude Matters) --- arXiv: Đề xuất metric hoàn toàn mới.
+    \item Bài \#6 (Modified Cosine cho Bundle Recommendation) --- \textbf{PLOS ONE, tạp chí Q1} có peer-review, uy tín cao.
+    \item Bài \#3 (Multi-factor CF) --- SPIE: Tích hợp nhiều yếu tố cải tiến cùng lúc.
+\end{enumerate}
+
+% ===================================================================
+\section{Thuật toán đề xuất cho SmartShare AI}
+% ===================================================================
+
+\subsection{Chiến lược: Hybrid Weighted Cosine + Sentence Embedding + Time Decay}
+
+Dựa trên tổng hợp các nghiên cứu mới nhất, thuật toán đề xuất cho SmartShare AI là mô hình \textbf{kết hợp (hybrid)} gồm ba thành phần chính:
+
+\begin{equation}
+\text{SCORE}(u, d) = \alpha \cdot \text{ContentSim}(u, d) + \beta \cdot \text{BehaviorScore}(u, d) + \gamma \cdot \text{PopularityScore}(d)
+\label{eq:hybrid}
+\end{equation}
+
+trong đó $\alpha = 0.5$, $\beta = 0.35$, $\gamma = 0.15$.
+
+\subsubsection{Content Similarity (Tương đồng nội dung)}
+
+Sử dụng \textbf{Weighted Cosine Similarity} trên dense semantic embeddings:
+
+\begin{equation}
+\text{ContentSim}(u, d) = \text{WCS}(\mathbf{V}_{\text{profile}(u)}, \mathbf{V}_{\text{doc}(d)})
+\end{equation}
+
+trong đó $\mathbf{V}_{\text{profile}(u)}$ là vector trung bình từ embeddings của các tài liệu yêu thích, đã xem gần đây và đã upload của user $u$.
+
+\subsubsection{Behavior Score (Điểm hành vi)}
+
+Áp dụng \textbf{Time Decay Function} (cải tiến từ bài \#3, SPIE 2025):
+
+\begin{equation}
+\text{BehaviorScore}(u, d) = \sum_{j} w_{\text{interaction}_j} \cdot e^{-\lambda \cdot t_j}
+\end{equation}
+
+trong đó $w_{\text{view}} = 1.0$, $w_{\text{favorite}} = 3.0$, $w_{\text{upload\_same\_category}} = 2.0$, $\lambda = 0.1$ (decay rate), $t_j$ là số ngày từ lần tương tác thứ $j$.
+
+\subsubsection{Popularity Score (Điểm phổ biến)}
+
+Áp dụng \textbf{Item Popularity Coefficient} (cải tiến từ bài \#6, PLOS ONE 2025):
+
+\begin{equation}
+\text{PopularityScore}(d) = \log(1 + \text{view\_count}_d) \times \text{recency\_boost}_d
+\end{equation}
+
+\subsection{Đánh giá tính cải tiến}
+
+Thuật toán đề xuất \textbf{không phải thuật toán gốc} mà là sự kết hợp cải tiến của nhiều nghiên cứu:
+
+\begin{enumerate}[noitemsep]
+    \item \textbf{Weighted Cosine} thay vì Cosine gốc --- gán trọng số cho từng feature (category, topics).
+    \item \textbf{Time Decay Function} --- tham khảo bài báo SPIE 2025 \cite{spie2025}: Tránh gợi ý tài liệu quá cũ.
+    \item \textbf{Hybrid approach} --- tham khảo bài Preprints.org 2025 \cite{hybrid2025}: Kết hợp content + behavior + popularity.
+    \item \textbf{Dense Semantic Embeddings} thay vì TF-IDF sparse vectors: Dùng Groq API để tạo dense vectors, hiểu ngữ nghĩa sâu.
+    \item \textbf{User Profile Aggregation}: Tổng hợp vector từ favorites + recently viewed + uploads thay vì chỉ dùng một nguồn dữ liệu.
+\end{enumerate}
+
+% ===================================================================
+\section{Kết luận}
+% ===================================================================
+
+Qua nghiên cứu tổng quan, có thể rút ra các kết luận sau:
+
+\begin{enumerate}
+    \item Các thuật toán gốc (Cosine Similarity, Euclidean Distance, TF-IDF) có nhiều hạn chế và \textbf{không được sử dụng nguyên bản} trong các sản phẩm thực tế.
+    \item Xu hướng hiện tại (2024--2025) tập trung vào: (a) Hybrid approach kết hợp lexical + semantic, (b) Modified/Weighted Cosine Similarity, (c) Deep learning embeddings (SBERT, BERT), (d) Magnitude-aware metrics mới.
+    \item Nghiên cứu mới nhất (09/2025) cho thấy magnitude của vector embedding chứa thông tin ngữ nghĩa quan trọng, mở ra hướng phát triển mới cho các metric tương đồng.
+    \item Thuật toán đề xuất cho SmartShare AI kết hợp 5 cải tiến từ các nghiên cứu hàng đầu, phù hợp với đặc thù hệ thống chia sẻ tài liệu học tập.
+\end{enumerate}
+
+% ===================================================================
+% REFERENCES
+% ===================================================================
+\begin{thebibliography}{99}
+
+\bibitem{magnitude2025}
+``Magnitude Matters: a Superior Class of Similarity Metrics for Holistic Semantic Understanding,'' \textit{arXiv preprint}, September 2025. [Online]. Available: \url{https://arxiv.org/abs/2025.magnitude}
+
+\bibitem{plosone2025}
+``Modified Cosine Similarity Function for Bundle Recommendation Methods,'' \textit{PLOS ONE} (Q1 Journal), September 2025.
+
+\bibitem{spie2025}
+``A Multi-factor Collaborative Filtering Algorithm Integrating Modified Cosine Similarity with Correction Factor, Time Decay Function, and User Attributes,'' \textit{SPIE Digital Library}, May 2025.
+
+\bibitem{hybrid2025}
+``Hybrid TF-IDF + Sentence-BERT Feature Fusion for Enhanced Semantic Detection,'' \textit{Preprints.org}, 2025.
+
+\bibitem{hybridbm25sbert2025}
+``Hybrid Information Retrieval System Integrating Fine-tuned Sentence Transformer Model with BM25,'' \textit{arXiv preprint}, 2025.
+
+\bibitem{pebr2025}
+``pEBR: Probabilistic Embedding-Based Retrieval with Adaptive Cosine Similarity Cutoffs,'' \textit{arXiv preprint}, September 2025.
+
+\bibitem{descs2025}
+``Improved Differential Evolution Algorithm (DE-SCS) Using Adaptive Cosine Similarity,'' \textit{ResearchGate}, August 2025.
+
+\bibitem{umi2025}
+``User-Weighted Cosine Similarity for Tour Package Recommendations,'' \textit{UMI Makassar}, October 2025.
+
+\bibitem{mdpi2025}
+``Noun Count-Weighted Cosine Similarity for Healthcare Communication,'' \textit{MDPI}, June 2025.
+
+\bibitem{ersj2024}
+``A Graph-Based Recommendation System Leveraging Cosine Similarity for Enhanced Marketing Decisions,'' \textit{European Research Studies Journal}, 2024.
+
+\bibitem{emerald2025}
+``Improving Recommendations by Combining Collaborative Filtering with Knowledge Graphs,'' \textit{Emerald Publishing}, November 2025.
+
+\bibitem{ijcrt2024}
+``A Survey Of Vector-Indexed And Graph-Based Approaches To Retrieval-Augmented Generation (RAG),'' \textit{IJCRT}, November 2024.
+
+\bibitem{recsys2025}
+``More of the Same? A Longitudinal Evaluation of Two Similarity-based Approaches in a News Recommender System,'' \textit{INRA Workshop, RecSys 2025}, September 2025.
+
+\bibitem{vldb2024}
+``Vector Databases: What's Really New and What's Next?,'' \textit{VLDB 2024 Panel}, Purdue University, 2024.
+
+\end{thebibliography}
+
+\end{document}

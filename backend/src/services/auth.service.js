@@ -7,10 +7,26 @@ const {
   forgotPasswordSchema,
   resetPasswordSchema,
   changePasswordSchema,
+  updateProfileSchema,
 } = require("../utils/validation");
 const crypto = require("crypto");
 const sendEmail = require("../utils/sendEmail");
 const { getPasswordResetTemplate } = require("../utils/emailTemplates");
+
+const getUserProfile = (user) => {
+  return {
+    _id: user.id || user._id,
+    fullName: user.fullName,
+    email: user.email,
+    role: user.role,
+    avatar: user.avatar,
+    phoneNumber: user.phoneNumber,
+    bio: user.bio,
+    theme: user.theme,
+    interests: user.interests || [],
+    token: generateToken(user._id || user.id),
+  };
+};
 
 const registerUser = async (userData) => {
   // Validate data
@@ -49,14 +65,7 @@ const registerUser = async (userData) => {
   });
 
   if (user) {
-    return {
-      _id: user.id,
-      fullName: user.fullName,
-      email: user.email,
-      role: user.role,
-      avatar: user.avatar,
-      token: generateToken(user._id),
-    };
+    return getUserProfile(user);
   } else {
     throw new Error("Invalid user data");
   }
@@ -88,14 +97,7 @@ const loginUser = async (email, password) => {
     throw new Error("Invalid credentials");
   }
 
-  return {
-    _id: user.id,
-    fullName: user.fullName,
-    email: user.email,
-    role: user.role,
-    avatar: user.avatar,
-    token: generateToken(user._id),
-  };
+  return getUserProfile(user);
 };
 
 const forgotPassword = async (email) => {
@@ -162,14 +164,7 @@ const resetPassword = async (resetToken, password) => {
 
   await user.save();
 
-  return {
-    _id: user.id,
-    fullName: user.fullName,
-    email: user.email,
-    role: user.role,
-    avatar: user.avatar,
-    token: generateToken(user._id),
-  };
+  return getUserProfile(user);
 };
 
 const changePassword = async (userId, currentPassword, newPassword) => {
@@ -189,14 +184,35 @@ const changePassword = async (userId, currentPassword, newPassword) => {
   user.password = newPassword;
   await user.save();
 
-  return {
-    _id: user.id,
-    fullName: user.fullName,
-    email: user.email,
-    role: user.role,
-    avatar: user.avatar,
-    token: generateToken(user._id),
-  };
+  return getUserProfile(user);
+};
+
+const updateProfile = async (userId, updateData) => {
+  const { error } = updateProfileSchema.validate(updateData);
+  if (error) throw new Error(error.details[0].message);
+
+  const user = await User.findById(userId);
+  if (!user) throw new Error("User not found");
+
+  // Fields allowed to update
+  const allowedFields = [
+    "fullName",
+    "phoneNumber",
+    "bio",
+    "avatar",
+    "theme",
+    "interests",
+  ];
+
+  allowedFields.forEach((field) => {
+    if (updateData[field] !== undefined) {
+      user[field] = updateData[field];
+    }
+  });
+
+  await user.save();
+
+  return user;
 };
 
 module.exports = {
@@ -205,4 +221,5 @@ module.exports = {
   forgotPassword,
   resetPassword,
   changePassword,
+  updateProfile,
 };

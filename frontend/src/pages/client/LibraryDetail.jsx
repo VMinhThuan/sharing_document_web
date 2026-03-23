@@ -38,14 +38,17 @@ const LibraryDetail = () => {
   const [zoom, setZoom] = useState(100);
 
   useEffect(() => {
+    let cancelled = false;
+
     const fetchDocument = async () => {
       setLoading(true);
       try {
         const res = await getDocumentByIdApi(id);
+        if (cancelled) return;
         if (res && res.statusCode === 200) {
           setDocument(res.data);
-          // Add to recently viewed if authenticated
-          if (isAuthenticated) {
+          // Add to recently viewed if authenticated (only once)
+          if (isAuthenticated && !cancelled) {
             addRecentlyViewedApi(id).catch((err) =>
               console.error("Failed to add to recently viewed:", err),
             );
@@ -54,14 +57,19 @@ const LibraryDetail = () => {
           message.error("Document not found");
         }
       } catch (error) {
+        if (cancelled) return;
         console.error("Failed to fetch document:", error);
         message.error("Failed to load document details");
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
     fetchDocument();
+
+    return () => {
+      cancelled = true;
+    };
   }, [id, isAuthenticated]);
 
   if (loading) {
@@ -79,7 +87,7 @@ const LibraryDetail = () => {
 
   if (!document) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-background-light dark:bg-background-dark">
+      <div className="flex-1 flex items-center justify-center bg-[#f9fafb] dark:bg-background-dark">
         <Empty description="Document not found" />
       </div>
     );
@@ -89,7 +97,7 @@ const LibraryDetail = () => {
   const handleZoomOut = () => setZoom((prev) => Math.max(prev - 10, 50));
 
   return (
-    <div className="flex flex-1 h-full overflow-hidden bg-background-light dark:bg-background-dark">
+    <div className="flex flex-1 h-full overflow-hidden bg-[#f9fafb] dark:bg-background-dark">
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col min-w-0 relative">
         {/* Document Header Area */}
@@ -333,48 +341,21 @@ const LibraryDetail = () => {
                           "This document type is not available for direct preview. Please use the download or print buttons to view the full content on your local system."}
                       </p>
 
-                      {document.aiAnalysis?.summary && (
-                        <div className="my-10 p-8 bg-blue-50/50 dark:bg-blue-900/10 rounded-2xl border-l-[6px] border-primary shadow-sm ring-1 ring-blue-100 dark:ring-blue-900/30">
-                          <div className="flex items-center gap-2 mb-4 text-primary">
-                            <span className="material-symbols-outlined text-[24px]">
-                              auto_awesome
+                      {document.aiAnalysis?.topics?.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-8 p-6 bg-slate-50 dark:bg-slate-900/40 rounded-2xl border border-slate-100 dark:border-slate-800">
+                          <h4 className="w-full text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                             <span className="material-symbols-outlined text-sm">local_offer</span> Key Topics
+                          </h4>
+                          {document.aiAnalysis.topics.map((topic, i) => (
+                            <span
+                              key={i}
+                              className="px-3 py-1 bg-white dark:bg-slate-800 rounded-lg text-[10px] font-bold text-primary uppercase tracking-wider border border-primary/20"
+                            >
+                              {topic}
                             </span>
-                            <h3 className="text-lg font-bold uppercase tracking-wider">
-                              AI Executive Summary
-                            </h3>
-                          </div>
-                          <p className="text-sm md:text-base text-slate-700 dark:text-slate-300 leading-loose italic">
-                            "{document.aiAnalysis.summary}"
-                          </p>
+                          ))}
                         </div>
                       )}
-
-                      {document.aiAnalysis?.keyPoints &&
-                        document.aiAnalysis.keyPoints.length > 0 && (
-                          <div className="space-y-6 mt-8">
-                            <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                              <span className="w-2 h-6 bg-primary rounded-full"></span>
-                              Key Insights
-                            </h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              {document.aiAnalysis.keyPoints.map(
-                                (point, idx) => (
-                                  <div
-                                    key={idx}
-                                    className="flex items-start gap-3 p-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow"
-                                  >
-                                    <span className="material-symbols-outlined text-primary text-lg">
-                                      check_circle
-                                    </span>
-                                    <span className="text-sm font-medium leading-normal">
-                                      {point}
-                                    </span>
-                                  </div>
-                                ),
-                              )}
-                            </div>
-                          </div>
-                        )}
                     </div>
                   </div>
                 );
