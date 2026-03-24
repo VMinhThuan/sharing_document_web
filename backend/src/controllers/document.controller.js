@@ -5,6 +5,9 @@ const documentParserService = require("../services/documentParser.service");
 const recommendationService = require("../services/recommendation.service");
 const scoreService = require("../services/score.service");
 const Document = require("../models/document.model");
+const Interaction = require("../models/interaction.model");
+const Notification = require("../models/notification.model");
+const Report = require("../models/report.model");
 const { successResponse, errorResponse } = require("../utils/response");
 const axios = require("axios");
 
@@ -41,12 +44,35 @@ const toggleFavorite = async (req, res) => {
   try {
     const { id } = req.params;
     const favorites = await userService.toggleFavorite(req.user._id, id);
-    // Cập nhật dynamic score khi favorite thay đổi
+    
+    // 1. Ghi nhận interaction "favorite"
+    await Interaction.create({
+      user: req.user._id,
+      document: id,
+      action: "favorite",
+      ipAddress: req.ip,
+    });
+
+    // 2. Cập nhật dynamic score
     scoreService
       .updateScoreOnFavorite(id)
       .catch((err) =>
         console.error("Score update on favorite failed:", err.message),
       );
+
+    // 3. TẠO THÔNG BÁO CHO CHỦ TÀI LIỆU (Notification)
+    const doc = await Document.findById(id);
+    if (doc && doc.uploadedBy.toString() !== req.user._id.toString()) {
+      await Notification.create({
+        recipient: doc.uploadedBy,
+        sender: req.user._id,
+        type: "like",
+        title: "Tài liệu của bạn được yêu thích!",
+        message: `${req.user.fullName} đã lưu tài liệu "${doc.title}" vào danh sách yêu thích.`,
+        document: id,
+      });
+    }
+
     successResponse(res, 200, "Favorite toggled", favorites);
   } catch (error) {
     errorResponse(res, 500, "Server Error", error.message);
@@ -301,19 +327,40 @@ const searchDocuments = async (req, res) => {
 const addRecentlyViewed = async (req, res) => {
   try {
     const { id } = req.params;
-    const recentlyViewed = await userService.addRecentlyViewed(
-      req.user._id,
-      id,
-    );
+    const doc = await documentService.getDocumentById(id);
+    if (!doc) {
+      return errorResponse(res, 404, "Document not found to record view");
+    }
 
-    // Increment view count on the document
-    const doc = await Document.findByIdAndUpdate(
+    // 1. Ghi nhận lịch sử xem tài liệu (chỉ nếu đã login)
+    let recentlyViewed = null;
+    if (req.user) {
+      console.log(`Recording history for user: ${req.user.email} on doc: ${id}`);
+      recentlyViewed = await userService.addRecentlyViewed(
+        req.user._id,
+        id,
+      );
+    } else {
+      console.log(`Guest view recorded for doc: ${id}`);
+    }
+
+    // 2. Ghi nhận interaction "view" chính xác mốc thời gian (Chuẩn cho Time Decay AI)
+    await Interaction.create({
+      user: req.user ? req.user._id : null,
+      document: id,
+      action: "view",
+      ipAddress: req.ip,
+      userAgent: req.headers["user-agent"],
+    });
+
+    // 2. Tăng số lượt xem (counter)
+    await Document.findByIdAndUpdate(
       id,
       { $inc: { views: 1 } },
       { new: true },
     );
 
-    // Update dynamic score based on new view count
+    // 3. Cập nhật dynamic score
     if (doc) {
       try {
         await scoreService.updateScoreOnView(id);
@@ -430,14 +477,22 @@ const recordDownload = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Increment download count
+    // 1. Ghi nhận interaction "download"
+    await Interaction.create({
+      user: req.user ? req.user._id : null,
+      document: id,
+      action: "download",
+      ipAddress: req.ip,
+    });
+
+    // 2. Tăng lượt tải
     const doc = await Document.findByIdAndUpdate(
       id,
       { $inc: { downloads: 1 } },
       { new: true },
     );
 
-    // Update dynamic score based on new download count
+    // 3. Cập nhật dynamic score
     if (doc) {
       try {
         await scoreService.updateScoreOnDownload(id);
@@ -449,6 +504,28 @@ const recordDownload = async (req, res) => {
     successResponse(res, 200, "Download recorded", { downloads: doc.downloads });
   } catch (error) {
     errorResponse(res, 500, "Server Error", error.message);
+  }
+};
+
+const reportDocument = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason, description } = req.body;
+
+    if (!reason) {
+      return errorResponse(res, 400, "Lý do báo cáo là bắt buộc");
+    }
+
+    const report = await Report.create({
+      reporter: req.user._id,
+      document: id,
+      reason,
+      description: description || "",
+    });
+
+    successResponse(res, 201, "Báo cáo của bạn đã được gửi đến quản trị viên", report);
+  } catch (error) {
+    errorResponse(res, 500, "Lỗi Server", error.message);
   }
 };
 
@@ -474,4 +551,5 @@ module.exports = {
   recalculateAllScores,
   getScoreAnalytics,
   recordDownload,
+  reportDocument,
 };

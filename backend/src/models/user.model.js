@@ -46,6 +46,19 @@ const userSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  major: {
+    type: String,
+    default: "Software Engineering",
+  },
+  school: {
+    type: String,
+    default: "Industrial University of Ho Chi Minh City",
+  },
+  academicYear: {
+    type: String,
+    enum: ["Freshman", "Sophomore", "Junior", "Senior", "Graduated"],
+    default: "Junior",
+  },
   isActive: {
     type: Boolean,
     default: true,

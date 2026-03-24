@@ -225,3 +225,13 @@ export const toggleCommentLikeApi = (id) => {
 export const getFavoriteCommentsApi = () => {
   return axios.get("/api/v1/comments/favorites/me");
 };
+
+// --- Notifications ---
+export const getMyNotificationsApi = () => {
+  return axios.get("/api/v1/notifications");
+};
+
+export const markAllNotificationsReadApi = () => {
+  return axios.put("/api/v1/notifications/mark-all-read");
+};
+

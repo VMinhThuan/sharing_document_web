@@ -129,8 +129,8 @@ const ExploreDocsDetail = () => {
         if (cancelled) return;
         if (res && res.statusCode === 200) {
           setDocument(res.data);
-          // Add to recently viewed if authenticated (only once)
-          if (isAuthenticated && !cancelled) {
+          // Add to recently viewed/increment views (works for both Guest and User now)
+          if (!cancelled) {
             addRecentlyViewedApi(id).catch((err) =>
               console.error("Failed to add to recently viewed:", err),
             );

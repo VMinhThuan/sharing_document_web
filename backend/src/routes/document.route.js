@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const documentController = require("../controllers/document.controller");
-const { protect, authorize } = require("../middlewares/auth.middleware");
+const { protect, authorize, optionalProtect } = require("../middlewares/auth.middleware");
 
 const { upload } = require("../configs/cloudinary");
 // Routes for documents
@@ -12,10 +12,10 @@ router.post(
   upload.single("file"),
   documentController.createDocument,
 );
+// Search documents (Public - Optional Ident)
 router.get(
   "/search",
-  protect,
-  authorize("admin", "user"),
+  optionalProtect,
   documentController.searchDocuments,
 );
 router.get(
@@ -42,10 +42,10 @@ router.get(
   authorize("admin", "user"),
   documentController.getRecentlyViewed,
 );
+// Record view (Public - Handles Guest & Auth)
 router.post(
   "/recent/:id",
-  protect,
-  authorize("admin", "user"),
+  optionalProtect,
   documentController.addRecentlyViewed,
 );
 router.get("/trending", documentController.getTrendingDocuments);
@@ -72,10 +72,10 @@ router.get(
   documentController.getScoreAnalytics,
 );
 
+// Get document detail (Public - Optional Ident)
 router.get(
   "/:id",
-  protect,
-  authorize("admin", "user"),
+  optionalProtect,
   documentController.getDocument,
 );
 router.put(
@@ -85,25 +85,24 @@ router.put(
   documentController.updateDocument,
 );
 // For now, assuming these are mostly admin actions as per previous context, but structure allows extension
+// Users can see public docs (approved) without login
 router.get(
   "/",
-  protect,
-  authorize("admin", "user"),
+  optionalProtect,
   documentController.getDocuments,
-); // Users might see public docs, admin sees all? logic needed later
+);
 
-// Proxy route for viewing documents (bypassing CORS/Cloudinary headers)
+// Proxy route for viewing documents (Public - Optional Ident)
 router.get(
   "/view/:id",
-  protect,
-  authorize("admin", "user"),
+  optionalProtect,
   documentController.viewDocument,
 );
 
+// Download document (Public - Optional Ident)
 router.post(
   "/download/:id",
-  protect,
-  authorize("admin", "user"),
+  optionalProtect,
   documentController.recordDownload,
 );
 
@@ -139,6 +138,14 @@ router.get(
   protect,
   authorize("admin"),
   documentController.getScoreHistory,
+);
+
+// Báo cáo vi phạm (Report)
+router.post(
+  "/:id/report",
+  protect,
+  authorize("admin", "user"),
+  documentController.reportDocument,
 );
 
 module.exports = router;

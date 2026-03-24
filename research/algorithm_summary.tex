@@ -1,0 +1,60 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage[vietnamese]{babel}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{hyperref}
+
+\title{Bản tóm tắt thuật toán hệ thống SmartShare AI}
+\author{Hệ thống Chia sẻ Tài liệu Sinh viên}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{Giới thiệu}
+Tài liệu này tóm tắt các thuật toán cốt lõi được triển khai trong hệ thống SmartShare AI để tối ưu hóa việc khám phá và gợi ý tài liệu học tập cho sinh viên. Hệ thống kết hợp giữa tính toán phổ biến động và trí tuệ nhân tạo cá nhân hóa.
+
+\section{Các thành phần thuật toán chính}
+
+\subsection{1. Trending Now (Tài liệu Xu hướng)}
+Mục tiêu là hiển thị các tài liệu đang nhận được sự quan tâm lớn nhất từ cộng đồng trong thời gian gần đây nhất.
+
+\begin{itemize}
+    \item \textbf{Thuật toán:} Dynamic Scoring System with Exponential Time Decay.
+    \item \textbf{Cơ chế tính điểm:} Sử dụng hàm Logarit để chuẩn hóa dữ liệu tương tác:
+    \begin{equation}
+        BaseScore = 10 \cdot \log(1 + Views) + 5 \cdot Favorites + 8 \cdot \log(1 + Downloads)
+    \end{equation}
+    \item \textbf{Suy giảm thời gian (Time Decay):} Áp dụng hàm suy giảm theo số mũ để ưu tiên tài liệu mới:
+    \begin{equation}
+        FinalScore = BaseScore \cdot e^{-\lambda t}
+    \end{equation}
+    Trong đó $\lambda = 0.005$ và $t$ là số ngày kể từ khi upload.
+\end{itemize}
+
+\subsection{2. AI Picks For You (Gợi ý Cá nhân hóa)}
+Hệ thống sử dụng mô hình lai (Hybrid) để thấu hiểu sở thích người dùng.
+
+\begin{itemize}
+    \item \textbf{Thuật toán:} Weighted Cosine Similarity kết hợp Behavior Analysis.
+    \item \textbf{Độ tương đồng Cosine có trọng số:} So khớp vector sở thích người dùng và đặc trưng tài liệu:
+    \begin{itemize}
+        \item Category Match: Trọng số 5.0
+        \item Topic Overlap (AI analyzed): Trọng số 3.0
+        \item Same Uploader: Trọng số 1.5
+    \end{itemize}
+    \item \textbf{Fuzzy Matching:} Sử dụng khoảng cách \textit{Levenshtein} để so khớp các chủ đề mờ, giúp AI hiểu được các khái niệm tương đồng dù cách viết khác nhau.
+\end{itemize}
+
+\subsection{3. Explore Topics & Search}
+\begin{itemize}
+    \item \textbf{Explore Topics:} Sử dụng thuật toán \textbf{Temporal Sorting} (Sắp xếp theo dòng thời gian thực) để duy trì tính tươi mới.
+    \item \textbf{Search Engine:} Sử dụng **Regex-based Full-Text Search** kết hợp Case-insensitive matching để tối ưu tốc độ tìm kiếm trên tập dữ liệu lớn.
+\end{itemize}
+
+\section{Kết luận}
+Sự kết hợp giữa các thuật toán truyền thống (Log-scaling, Time Decay) và hiện đại (Cosine Similarity, AI Topic Analysis) giúp SmartShare AI không chỉ là một kho lưu trữ mà còn là một hệ sinh thái học tập thông minh, thấu hiểu nhu cầu của từng sinh viên.
+
+\end{document}

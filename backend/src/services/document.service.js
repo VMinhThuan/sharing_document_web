@@ -58,7 +58,9 @@ const updateDocument = async (id, data) => {
 };
 
 const getDocumentById = async (id) => {
-  return await Document.findById(id).populate("category", "name");
+  return await Document.findById(id)
+    .populate("category", "name")
+    .populate("uploadedBy", "fullName avatar");
 };
 
 const getUserDocuments = async (userId, status, limit = 10, page = 1) => {

@@ -13,7 +13,9 @@ router.use("/users", userRoutes);
 router.use("/documents", documentRoutes);
 router.use("/dashboard", dashboardRoutes);
 router.use("/categories", categoryRoutes);
+router.use("/notifications", require("./notification.route"));
 router.use("/comments", commentRoutes);
+router.use("/interactions", require("./interaction.route"));
 router.use("/upload", require("./upload.route"));
 
 module.exports = router;

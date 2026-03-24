@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import {
   getDocumentsApi,
@@ -71,13 +71,15 @@ const Home = () => {
     }
   };
 
+  const location = useLocation();
+
   useEffect(() => {
     const fetchHomeData = async () => {
       setLoading(true);
       setTrendingLoading(true);
       try {
         const [recs, trending, recent] = await Promise.all([
-          getRecommendationsApi(10),
+          isAuthenticated ? getRecommendationsApi(10) : Promise.resolve({ statusCode: 200, data: { docs: [] } }),
           getTrendingDocumentsApi(10),
           isAuthenticated ? getRecentlyViewedApi() : Promise.resolve({ statusCode: 200, data: [] }),
         ]);
@@ -101,7 +103,7 @@ const Home = () => {
 
     fetchHomeData();
     fetchExploreDocs();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, location.key]);
 
   const handleToggleFavorite = async (e, docId) => {
     e.preventDefault();
@@ -113,10 +115,16 @@ const Home = () => {
     try {
       const res = await toggleFavoriteApi(docId);
       if (res && res.statusCode === 200) {
+        if (res.message.toLowerCase().includes("added") || res.message.toLowerCase().includes("thành công") || user?.favorites?.includes(docId) === false) {
+           message.success(res.message);
+        } else {
+           message.info(res.message);
+        }
         refreshUser(true);
       }
     } catch (error) {
       console.error("Toggle favorite error:", error);
+      message.error("Action failed. Please try again.");
     }
   };
 
@@ -241,15 +249,43 @@ const Home = () => {
                         </span>
                       )}
                     </div>
-                    <div className="p-3 space-y-2">
-                      <h3 className="font-extrabold text-[#111318] dark:text-white line-clamp-1 group-hover:text-primary transition-colors">
-                        {doc.title}
-                      </h3>
-                      <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-gray-400 font-bold uppercase tracking-widest">
-                        <span>{doc.views} views</span>
-                        <span className="text-primary font-black">
-                          {formatFileType(doc.fileType)}
+                    <div className="p-4 space-y-3">
+                      <div className="flex items-start justify-between">
+                        <h3 className="font-extrabold text-[#111318] dark:text-white line-clamp-1 group-hover:text-primary transition-colors text-sm">
+                          {doc.title}
+                        </h3>
+                        <span
+                          className={`material-symbols-outlined transition-colors cursor-pointer flex-shrink-0 ml-2 text-[20px] ${
+                            user?.favorites?.includes(doc._id)
+                              ? "text-red-500"
+                              : "text-gray-400 hover:text-red-500"
+                          }`}
+                          style={{
+                            fontVariationSettings: `'FILL' ${user?.favorites?.includes(doc._id) ? 1 : 0}`,
+                          }}
+                          onClick={(e) => handleToggleFavorite(e, doc._id)}
+                        >
+                          favorite
                         </span>
+                      </div>
+                      
+                      <div className="flex items-center justify-between pt-2 border-t border-slate-50 dark:border-gray-800">
+                        <div className="flex items-center gap-2 min-w-0">
+                          {doc.uploadedBy?.avatar ? (
+                            <img src={doc.uploadedBy.avatar} className="size-5 rounded-full object-cover" alt="" />
+                          ) : (
+                            <div className="size-5 rounded-full bg-orange-100 flex items-center justify-center text-[9px] font-bold text-orange-600">
+                              {doc.uploadedBy?.fullName?.charAt(0) || "U"}
+                            </div>
+                          )}
+                          <span className="text-[10px] font-bold text-slate-500 truncate max-w-[70px]">
+                            {doc.uploadedBy?.fullName || "Anonymous"}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400">
+                           <span className="material-symbols-outlined text-[14px]">visibility</span>
+                           {doc.views || 0}
+                        </div>
                       </div>
                     </div>
                   </Link>
@@ -362,11 +398,11 @@ const Home = () => {
                         </div>
                         <div className="flex flex-col gap-1">
                           <div className="flex justify-between items-start">
-                            <h3 className="font-bold text-base text-gray-900 dark:text-white group-hover:text-primary transition-colors line-clamp-1">
+                            <h3 className="font-bold text-sm text-gray-900 dark:text-white group-hover:text-primary transition-colors line-clamp-1">
                               {doc.title}
                             </h3>
                             <span
-                              className={`material-symbols-outlined transition-colors cursor-pointer flex-shrink-0 ml-2 ${
+                              className={`material-symbols-outlined transition-colors cursor-pointer flex-shrink-0 ml-2 text-[20px] ${
                                 user?.favorites?.includes(doc._id)
                                   ? "text-red-500"
                                   : "text-gray-400 hover:text-red-500"
@@ -379,10 +415,24 @@ const Home = () => {
                               favorite
                             </span>
                           </div>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
-                            {doc.description ||
-                              "Browse through high-quality study materials tailored for your subjects."}
-                          </p>
+                          <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-50 dark:border-gray-800">
+                            <div className="flex items-center gap-2 min-w-0">
+                              {doc.uploadedBy?.avatar ? (
+                                <img src={doc.uploadedBy.avatar} className="size-5 rounded-full object-cover" alt="" />
+                              ) : (
+                                <div className="size-5 rounded-full bg-primary/10 flex items-center justify-center text-[9px] font-bold text-primary">
+                                  {doc.uploadedBy?.fullName?.charAt(0) || "U"}
+                                </div>
+                              )}
+                              <span className="text-[10px] font-bold text-slate-500 truncate max-w-[80px]">
+                                {doc.uploadedBy?.fullName || "Anonymous"}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400">
+                               <span className="material-symbols-outlined text-[14px]">visibility</span>
+                               {doc.views || 0}
+                            </div>
+                          </div>
                         </div>
                       </Link>
                     ))
@@ -483,8 +533,21 @@ const Home = () => {
                           <div className="absolute top-3 left-3 px-2 py-0.5 rounded-lg bg-white/90 dark:bg-black/60 backdrop-blur text-[9px] font-black text-primary uppercase tracking-widest">
                              {formatFileType(doc.fileType)}
                           </div>
+                          <span
+                            className={`absolute top-3 right-3 material-symbols-outlined transition-colors cursor-pointer flex-shrink-0 text-[20px] z-10 ${
+                              user?.favorites?.includes(doc._id)
+                                ? "text-red-500"
+                                : "text-gray-400 hover:text-red-500"
+                            }`}
+                            style={{
+                              fontVariationSettings: `'FILL' ${user?.favorites?.includes(doc._id) ? 1 : 0}`,
+                            }}
+                            onClick={(e) => handleToggleFavorite(e, doc._id)}
+                          >
+                            favorite
+                          </span>
                        </div>
-                      <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 line-clamp-1 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors mb-1">
+                      <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 line-clamp-1 group-hover:text-primary transition-colors mb-1">
                         {doc.title}
                       </h3>
                       <p className="text-[11px] text-slate-500 dark:text-gray-500 line-clamp-2 min-h-[32px] mb-3 leading-relaxed">
